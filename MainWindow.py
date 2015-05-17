@@ -3,6 +3,7 @@ from PyQt4.QtGui import QBrush, QColor
 from PyQt4 import QtGui, QtCore
 import sys
 import math
+import random
 
 from Primitive import Primitive
 from NeuralNetworkViewer import NeuralNetworkViewer
@@ -25,9 +26,12 @@ class MainWindow(QtGui.QWidget):
         self.scaled_prom_func = []
         self.draw_plots = False
 
+        # self.timer_interval = 300
         self.timer_interval = 300
         self.timer = QtCore.QBasicTimer()
         self.timer.start(self.timer_interval, self)
+        self.auto_teach = False
+        self.auto_teach_counter = 0
 
     def timerEvent(self, event):
 
@@ -48,6 +52,14 @@ class MainWindow(QtGui.QWidget):
 
         self.repaint()
         nnv_window.repaint()
+        if self.auto_teach:
+            self.mouse.but1_pressed = True
+            self.auto_teach_counter -= 1
+            if self.auto_teach_counter <= 0:
+                self.auto_teach_counter = random.randint(500, 1000)
+                self.mouse.x = random.randint(0, self.width())
+                self.mouse.y = random.randint(0, self.height())
+                self.mouse.area_size = random.randint(10,40)
 
     def get_sensor_value(self, x, y):
         if self.mouse.pressed() and math.sqrt((self.mouse.x-x)**2 + (self.mouse.y-y)**2) < self.mouse.area_size:
@@ -162,43 +174,41 @@ class MainWindow(QtGui.QWidget):
                 self.repaint()
 
     def keyPressEvent(self, event):
-        print("key={}".format(event.key()))
-        if event.key() == 32:
+        print("key={} ".format(event.key()))
+        if event.key() == 32:  # space
             if self.timer.isActive():
                 self.timer.stop()
             else:
                 self.timer.start(self.timer_interval, self)
-        elif event.key() == 67:
+        elif event.key() == 67:  # c
             self.state_func, self.promotion_func, self.aver_promotion_func = [], [], []
             self.scaled_prom_func = []
             self.draw_plots = not self.draw_plots
-        elif event.key() == 43:
+        elif event.key() == 43:  # -
             if self.timer_interval < 20:
-                self.timer_interval -= 1
+                self.set_timer_interval(self.timer_interval - 1)
             else:
-                self.timer_interval -= 20
-            self.timer.stop()
-            self.timer.start(self.timer_interval, self)
-        elif event.key() == 45:
+                self.set_timer_interval(self.timer_interval - 20)
+        elif event.key() == 45:  # +
             if self.timer_interval < 20:
-                self.timer_interval += 1
+                self.set_timer_interval(self.timer_interval + 1)
             else:
-                self.timer_interval += 20
-            self.timer.stop()
-            self.timer.start(self.timer_interval, self)
-        elif event.key() == 88: # x
+                self.set_timer_interval(self.timer_interval + 20)
+        elif event.key() == 16777219:  # backspace
+            self.set_timer_interval(1)
+        elif event.key() == 88:  # x
             self.prim.brain.context_layer.clean()
             print("context cleared")
-        elif event.key() == 70: # f
+        elif event.key() == 70:  # f
             self.mouse.fixed = not self.mouse.fixed
-        elif event.key() == 87: # w
-            pass
-        elif event.key() == 65: # a
-            pass
-        elif event.key() == 83: # s
-            pass
-        elif event.key() == 68: # d
-            pass
+        elif event.key() == 65:  # a
+            self.auto_teach = not self.auto_teach
+
+    def set_timer_interval(self, interval):
+        self.timer_interval = max(1, interval)
+        self.timer.stop()
+        self.timer.start(self.timer_interval, self)
+
 
 
 

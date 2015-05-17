@@ -28,7 +28,7 @@ class Primitive():
         self.first_state = True
 
 
-        self.brain = NeuralNetwork([self.sensor_count, 7, 1], learn_rate=0.05)
+        self.brain = NeuralNetwork([self.sensor_count, 10, 2], learn_rate=0.05)
         # self.brain = NetworkTest.make_net(self.sensor_count)
 
     def sensors_positions(self):
@@ -40,7 +40,7 @@ class Primitive():
 
     def update(self, sensors_values):
         answer = self.brain.calculate(sensors_values)
-        print("inp={} answ={:.6f}".format(sensors_values, answer[0]))
+        print("inp={} answ={:.6f}, {:.6f}".format(sensors_values, answer[0], answer[1]))
 
         if abs(self.promotion) < 0.000001:
             self.idle_time += 1
@@ -56,7 +56,7 @@ class Primitive():
 
         # self._move(answer[0]*2, answer[1]*2)
         # self._grow_up(answer[2]*2)
-        self.move(answer[0], 0)
+        self.move(answer[0], answer[1])
 
     def change_state(self, delta):
         self.state += delta

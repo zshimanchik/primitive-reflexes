@@ -71,7 +71,7 @@ class Layer(_AbstractLayer):
     def teach_output_layer(self, learn_rate, error_value):
         outs = [neuron.out for neuron in self]
         for i in range(len(self)):
-            self[i].dEdNET = error_value * (1 - outs[i]**2) * math.copysign(1, outs[i])
+            self[i].dEdNET = error_value * (1 - outs[i]**2) * math.copysign(1, outs[i]) * random()
             self[i].dw = [-learn_rate * self[i].dEdNET * inp_value for inp_value in self.input_values]
             self[i].dw0 = learn_rate * self[i].dEdNET
 
