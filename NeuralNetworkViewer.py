@@ -32,7 +32,7 @@ class NeuralNetworkViewer(QtGui.QWidget):
         cell_width = self.width()
         cell_height = self.height()/len(self.network)
 
-        self.draw_layer(qp, self.network.input_layer, 0, 0, cell_width/2, cell_height)
+        self.draw_layer(qp, self.network.input_layer, 0, 0, cell_width, cell_height)
         # self.draw_layer(qp, self.network.context_layer, cell_width/2, 0, cell_width/2, cell_height)
 
         self.draw_layer(qp, self.network.middle_layer, 0, 1*cell_height, cell_width, cell_height, draw_w=True)
@@ -51,18 +51,23 @@ class NeuralNetworkViewer(QtGui.QWidget):
             neuron = layer[i]
             rect = QRect(x+i*cell_width, y, cell_width, cell_height)
 
-            # qp.setBrush(brush(randint(0,255), randint(0,255), randint(0,255)))
-            # qp.drawEllipse(rect)
-
-            setColor(qp, int((neuron.out+1)*255/2.0))
-            qp.drawPie(rect, 0, -180*16)
-
             if draw_w:
+                # draw w0
+                setColor(qp, int((neuron.w0+1)*255/2.0))
+                qp.drawPie(rect, 0, -180*16)
+                # draw out
+                setColor(qp, int((neuron.out+1)*255/2.0))
+                qp.drawChord(rect, -20*16, -140*16)
+                # draw w
                 w_angle = 180 * 16 / float(len(neuron.w))
                 for j in range(len(neuron.w)):
                     setColor(qp, int((neuron.w[j]+1)*255/2.0))
                     qp.drawPie(rect, j*w_angle, w_angle)
             else:
+                # draw out
+                setColor(qp, int((neuron.out+1)*255/2.0))
+                qp.drawPie(rect, 0, -180*16)
+                # draw input
                 setColor(qp, int((layer.input_values[i]+1) * 255.0 / 2.0))
                 qp.drawPie(rect, 0, 180*16)
 
