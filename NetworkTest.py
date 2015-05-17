@@ -42,8 +42,11 @@ def make_net(sensor_count= 16):
         epoch_error = 0
         for test in test_db:
             y = net.calculate(test[0])
+            if (y[0] < 0 and test[1][0] < 0) or (y[0] > 0 and test[1][0] > 0):
+                net.teach(-0.004)
+            else:
+                net.teach(0.004)
             err = y[0] - test[1][0]
-            net.teach(math.copysign(0.004, err))
             epoch_error += err**2
         epoch_error /= len(test_db)
         errs.append(epoch_error)
