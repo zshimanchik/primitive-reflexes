@@ -17,14 +17,14 @@ class NeuralNetwork:
         self.output_layer = Layer(shape[2], self.middle_layer.neurons)
         self.middle_layer.listeners.append(self.output_layer)
 
-        self.context_layer = ContextLayer(shape[1], self.middle_layer.neurons)
-        self.middle_layer.listeners.append(self.context_layer)
-        self.middle_layer.add_input(self.context_layer.neurons)
+        # self.context_layer = ContextLayer(shape[1], self.middle_layer.neurons)
+        # self.middle_layer.listeners.append(self.context_layer)
+        # self.middle_layer.add_input(self.context_layer.neurons)
 
         self.layers.append(self.input_layer)
         self.layers.append(self.middle_layer)
         self.layers.append(self.output_layer)
-        self.layers.append(self.context_layer)
+        # self.layers.append(self.context_layer)
 
         # prev_layer = self.input_layer
         # for i in range(1, len(self)):
@@ -64,7 +64,7 @@ class NeuralNetwork:
             self.time += 1
 
             # teach last layer
-            self.output_layer.teach_output_layer(self.learn_rate, d[1])
+            self.output_layer.teach_output_layer2(self.learn_rate, d[1])
 
             # teach middle layers
             for li in range(len(self) - 2, 0, -1):

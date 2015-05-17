@@ -13,6 +13,7 @@ def pen(r, g, b, alpha=255):
     return QPen(QColor(r, g, b, alpha))
 
 def setColor(qp, color):
+    color = max(0, min(255, color))
     qp.setBrush(brush(100, color, 255-color))
     qp.setPen(pen(100, color, 255-color))
 
@@ -32,7 +33,7 @@ class NeuralNetworkViewer(QtGui.QWidget):
         cell_height = self.height()/len(self.network)
 
         self.draw_layer(qp, self.network.input_layer, 0, 0, cell_width/2, cell_height)
-        self.draw_layer(qp, self.network.context_layer, cell_width/2, 0, cell_width/2, cell_height)
+        # self.draw_layer(qp, self.network.context_layer, cell_width/2, 0, cell_width/2, cell_height)
 
         self.draw_layer(qp, self.network.middle_layer, 0, 1*cell_height, cell_width, cell_height, draw_w=True)
         self.draw_layer(qp, self.network.output_layer, 0, 2*cell_height, cell_width, cell_height, draw_w=True)

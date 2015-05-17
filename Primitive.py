@@ -2,6 +2,7 @@ __author__ = 'arch'
 import math
 import random
 from NeuralNetwork.NeuralNetwork import NeuralNetwork
+import NetworkTest
 
 
 class Primitive():
@@ -23,9 +24,12 @@ class Primitive():
         self.scaled_promotion = 0
 
         self.idle_time = 0
-
+        self.random_plan = []
         self.first_state = True
-        self.brain = NeuralNetwork([self.sensor_count, 50, 1], learn_rate=5.5)
+
+
+        self.brain = NeuralNetwork([self.sensor_count, 7, 1], learn_rate=0.05)
+        # self.brain = NetworkTest.make_net(self.sensor_count)
 
     def sensors_positions(self):
         res = []
@@ -36,14 +40,19 @@ class Primitive():
 
     def update(self, sensors_values):
         answer = self.brain.calculate(sensors_values)
+        print("inp={} answ={:.6f}".format(sensors_values, answer[0]))
 
-        if abs(self.promotion) < 0.0001:
+        if abs(self.promotion) < 0.000001:
             self.idle_time += 1
         else:
             self.idle_time = 0
 
-        if self.idle_time > 10:
-            answer[0] += random.random() * 2.0 - 1.0
+        # if self.idle_time > 10:
+        #     if not len(self.random_plan):
+        #         self.random_plan = [random.random() * 2.0 - 1.0] * random.randint(4, 10)
+        #
+        # if len(self.random_plan):
+        #     answer[0] += self.random_plan.pop()
 
         # self._move(answer[0]*2, answer[1]*2)
         # self._grow_up(answer[2]*2)
@@ -56,6 +65,7 @@ class Primitive():
 
         self.promotion = delta - self.prev_delta
         self.prev_delta = delta
+        print "promotion={:.6f}".format(self.promotion)
 
         if not self.first_state:
 
@@ -75,18 +85,12 @@ class Primitive():
                 # else:
                 #     print("{:.6f} - {:.6f} - {:.6f}".format(self.promotion, self.average_promotion, self.scaled_promotion))
 
-                if self.promotion > 0:
-                    self.scaled_promotion = self.promotion_filter*2
-                elif self.promotion < 0:
-                    self.scaled_promotion = -self.promotion_filter*2
-                else:
+                if self.promotion == 0:
                     self.scaled_promotion = 0
+                else:
+                    self.scaled_promotion = math.copysign(0.004, self.promotion)
 
                 self.brain.teach(-self.scaled_promotion)
-                # if self.promotion < 0:
-                #     self.brain.teach(-self.promotion*2.0)
-                # else:
-                #     self.brain.teach(-self.promotion)
             else:
                 print("{:.6f} - {:.6f} - filtered".format(self.promotion, self.average_promotion))
         else:

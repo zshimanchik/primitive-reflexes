@@ -173,11 +173,17 @@ class MainWindow(QtGui.QWidget):
             self.scaled_prom_func = []
             self.draw_plots = not self.draw_plots
         elif event.key() == 43:
-            self.timer_interval -= 20
+            if self.timer_interval < 20:
+                self.timer_interval -= 1
+            else:
+                self.timer_interval -= 20
             self.timer.stop()
             self.timer.start(self.timer_interval, self)
         elif event.key() == 45:
-            self.timer_interval += 20
+            if self.timer_interval < 20:
+                self.timer_interval += 1
+            else:
+                self.timer_interval += 20
             self.timer.stop()
             self.timer.start(self.timer_interval, self)
         elif event.key() == 88: # x
