@@ -203,6 +203,10 @@ class MainWindow(QtGui.QWidget):
             self.mouse.fixed = not self.mouse.fixed
         elif event.key() == 65:  # a
             self.auto_teach = not self.auto_teach
+        elif event.key() == 78:  # n
+            global nnv_window
+            nnv_window.show()
+
 
     def set_timer_interval(self, interval):
         self.timer_interval = max(1, interval)
@@ -240,6 +244,7 @@ class Mouse():
 
 
 if __name__=='__main__':
+    global nnv_window
     application = QtGui.QApplication(sys.argv)
     primitive = Primitive()
     nnv_window = NeuralNetworkViewer(primitive.brain)
