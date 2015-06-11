@@ -71,20 +71,6 @@ class Primitive():
 
             # filter huge spades
             if abs(self.promotion) < Primitive.promotion_filter:
-                self.average_promotion = self.average_promotion * self._prev_step_average_promotion_ration \
-                                     + abs(self.promotion) / self.average_promotion_size
-
-                if self.average_promotion != 0:
-                    self.scaled_promotion = self.promotion / abs(self.average_promotion) * Primitive.norma
-                else:
-                    self.scaled_promotion=0
-
-                # if abs(self.scaled_promotion) > Primitive.promotion_filter:
-                #     self.scaled_promotion = math.copysign(self.promotion_filter, self.scaled_promotion)
-                #     print("{:.6f} - {:.6f} - {:.6f} - was cut".format(self.promotion, self.average_promotion, self.scaled_promotion))
-                # else:
-                #     print("{:.6f} - {:.6f} - {:.6f}".format(self.promotion, self.average_promotion, self.scaled_promotion))
-
                 if self.promotion == 0:
                     self.scaled_promotion = 0
                 else:
@@ -92,7 +78,7 @@ class Primitive():
 
                 self.brain.teach(-self.scaled_promotion)
             else:
-                print("{:.6f} - {:.6f} - filtered".format(self.promotion, self.average_promotion))
+                print("{:.6f} - filtered".format(self.promotion))
         else:
             self.average_promotion = abs(self.promotion)
             self.first_state = False

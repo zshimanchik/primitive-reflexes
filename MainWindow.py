@@ -53,10 +53,11 @@ class MainWindow(QtGui.QWidget):
         self.repaint()
         nnv_window.repaint()
         if self.auto_teach:
-            self.mouse.but1_pressed = True
             self.auto_teach_counter -= 1
             if self.auto_teach_counter <= 0:
                 self.auto_teach_counter = random.randint(500, 1000)
+                self.mouse.but1_pressed = random.randint(0, 1) == 0
+                self.mouse.but2_pressed = not self.mouse.but1_pressed
                 self.mouse.x = random.randint(0, self.width())
                 self.mouse.y = random.randint(0, self.height())
                 self.mouse.area_size = random.randint(10,40)
@@ -203,6 +204,7 @@ class MainWindow(QtGui.QWidget):
             self.mouse.fixed = not self.mouse.fixed
         elif event.key() == 65:  # a
             self.auto_teach = not self.auto_teach
+            print "auto teach = {}".format(self.auto_teach)
         elif event.key() == 78:  # n
             global nnv_window
             nnv_window.show()
