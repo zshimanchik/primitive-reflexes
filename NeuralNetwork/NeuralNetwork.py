@@ -58,6 +58,9 @@ class NeuralNetwork:
     def teach_considering_random(self, promotion_value):
         answer_with_random = self.output_layer.get_output_values()
         answer_without_random = self.calculate(self.input_layer.input_values)
+        if promotion_value < 0:
+            answer_with_random = [-x for x in answer_with_random]
+            promotion_value = -promotion_value
         self.output_layer.teach_output_layer2(promotion_value, answer_with_random)
 
         # teach middle layers
