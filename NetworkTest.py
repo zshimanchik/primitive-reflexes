@@ -1,6 +1,7 @@
-__author__ = 'arch'
+__author__ = 'zshimanchik'
 import math
 import random
+
 from NeuralNetwork.NeuralNetwork import NeuralNetwork
 
 

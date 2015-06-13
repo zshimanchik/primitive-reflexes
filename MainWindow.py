@@ -1,9 +1,10 @@
-__author__ = 'arch'
-from PyQt4.QtGui import QBrush, QColor
-from PyQt4 import QtGui, QtCore
+__author__ = 'zshimanchik'
 import sys
 import math
 import random
+
+from PyQt4.QtGui import QBrush, QColor
+from PyQt4 import QtGui, QtCore
 
 from Primitive import Primitive
 from NeuralNetworkViewer import NeuralNetworkViewer
@@ -22,8 +23,9 @@ class MainWindow(QtGui.QWidget):
         self.prim = primitive
         self.nnv_window = nnv_window
 
-        self.state_func, self.promotion_func, self.aver_promotion_func = [], [], []
-        self.scaled_prom_func = []
+        self.stimulation_func = PlotFunction(self.width(), shifted=True)
+        self.state_func = PlotFunction(self.width(), shifted=True)
+        self.scaled_prom_func = PlotFunction(self.width(), shifted=True)
         self.draw_plots = False
 
         # self.timer_interval = 300
@@ -34,24 +36,22 @@ class MainWindow(QtGui.QWidget):
         self.auto_teach_counter = 0
 
     def timerEvent(self, event):
-
-        self.setWindowTitle("{:.4f} : {:.6f} : {:.6f} : {:.6f}".format(self.prim.state, self.prim.promotion, self.prim.average_promotion, self.prim.scaled_promotion))
+        self.setWindowTitle("{:.4f} : {:.6f} : {:.6f}".format(self.prim.state, self.prim.stimulation,
+                                                                       self.prim.scaled_stimulation))
         self.update_primitive_position()
         if self.draw_plots:
-            self.state_func.append(self.prim.state)
-            self.promotion_func.append(self.prim.promotion)
-            self.aver_promotion_func.append(self.prim.average_promotion)
-            self.scaled_prom_func.append(self.prim.scaled_promotion)
+            self.state_func.add_value(self.prim.state)
+            self.stimulation_func.add_value(self.prim.stimulation)
+            self.scaled_prom_func.add_value(self.prim.scaled_stimulation)
 
         state_delta = self.get_state_delta()
-        # print(self.prim.promotion)
 
         self.prim.change_state(state_delta)
-        sensors_values = [ self.get_sensor_value(x, y) for x, y in self.prim.sensors_positions()]
+        sensors_values = [self.get_sensor_value(x, y) for x, y in self.prim.sensors_positions()]
         self.prim.update(sensors_values)
 
         self.repaint()
-        nnv_window.repaint()
+        self.nnv_window.repaint()
         if self.auto_teach:
             self.auto_teach_counter -= 1
             if self.auto_teach_counter <= 0:
@@ -76,8 +76,6 @@ class MainWindow(QtGui.QWidget):
             val = self.calc_intersect_value()/5000.0
             if self.mouse.but2_pressed:
                 val *= -1
-        # if val == 0:
-        #     val = self.prim.state / -10.0
         return val
 
     def calc_intersect_value(self):
@@ -94,21 +92,20 @@ class MainWindow(QtGui.QWidget):
         if self.draw_plots:
             zoom = 8000
             qp.setPen(QtCore.Qt.gray)
-            qp.drawLine(0, Primitive.promotion_filter*zoom + 200, len(self.promotion_func), Primitive.promotion_filter*zoom + 200)
-            qp.drawLine(0, -Primitive.promotion_filter*zoom + 200, len(self.promotion_func), -Primitive.promotion_filter*zoom + 200)
-            qp.drawLine(0, 200, len(self.promotion_func), 200)
+            qp.drawLine(0, Primitive.stimulation_filter * zoom + 200, len(self.stimulation_func),
+                        Primitive.stimulation_filter * zoom + 200)
+            qp.drawLine(0, -Primitive.stimulation_filter * zoom + 200, len(self.stimulation_func),
+                        -Primitive.stimulation_filter * zoom + 200)
+            qp.drawLine(0, 200, len(self.stimulation_func), 200)
             qp.setPen(QtCore.Qt.darkCyan)
             for i in range(len(self.state_func)-1):
                 qp.drawLine(i, -self.state_func[i]*70 + 200, i+1, -self.state_func[i+1]*70 + 200)
-            qp.setPen(QtCore.Qt.blue)
-            for i in range(len(self.promotion_func)-1):
-                qp.drawLine(i, -self.promotion_func[i]*zoom + 200, i+1, -self.promotion_func[i+1]*zoom + 200)
-            qp.setPen(QtCore.Qt.green)
-            for i in range(len(self.aver_promotion_func)-1):
-                qp.drawLine(i, -self.aver_promotion_func[i]*zoom + 200, i+1, -self.aver_promotion_func[i+1]*zoom + 200)
-            qp.setPen(QtCore.Qt.red)
+            qp.setPen(QtCore.Qt.darkBlue)
             for i in range(len(self.scaled_prom_func)-1):
                 qp.drawLine(i, -self.scaled_prom_func[i]*zoom + 200, i+1, -self.scaled_prom_func[i+1]*zoom + 200)
+            qp.setPen(QtCore.Qt.red)
+            for i in range(len(self.stimulation_func)-1):
+                qp.drawLine(i, -self.stimulation_func[i]*zoom + 200, i+1, -self.stimulation_func[i+1]*zoom + 200)
         # drawing primitive
         qp.setPen(QtCore.Qt.black)
         qp.setBrush(brush(170, 170, 170))
@@ -175,15 +172,14 @@ class MainWindow(QtGui.QWidget):
                 self.repaint()
 
     def keyPressEvent(self, event):
-        print("key={} ".format(event.key()))
+        if Primitive.debug:
+            print("key={} ".format(event.key()))
         if event.key() == 32:  # space
             if self.timer.isActive():
                 self.timer.stop()
             else:
                 self.timer.start(self.timer_interval, self)
         elif event.key() == 67:  # c
-            self.state_func, self.promotion_func, self.aver_promotion_func = [], [], []
-            self.scaled_prom_func = []
             self.draw_plots = not self.draw_plots
         elif event.key() == 43:  # -
             if self.timer_interval < 20:
@@ -199,23 +195,29 @@ class MainWindow(QtGui.QWidget):
             self.set_timer_interval(1)
         elif event.key() == 88:  # x
             self.prim.brain.context_layer.clean()
-            print("context cleared")
+            if Primitive.debug:
+                print("context cleared")
         elif event.key() == 70:  # f
             self.mouse.fixed = not self.mouse.fixed
         elif event.key() == 65:  # a
             self.auto_teach = not self.auto_teach
-            print "auto teach = {}".format(self.auto_teach)
+            if Primitive.debug:
+                print("auto teach = {}".format(self.auto_teach))
         elif event.key() == 78:  # n
-            global nnv_window
-            nnv_window.show()
-
+            self.nnv_window.setVisible(not self.nnv_window.isVisible())
 
     def set_timer_interval(self, interval):
         self.timer_interval = max(1, interval)
         self.timer.stop()
         self.timer.start(self.timer_interval, self)
 
+    def resizeEvent(self, event):
+        self.stimulation_func.set_size(self.width())
+        self.state_func.set_size(self.width())
+        self.scaled_prom_func.set_size(self.width())
 
+    def closeEvent(self, event):
+        self.nnv_window.close()
 
 
 class Mouse():
@@ -225,6 +227,9 @@ class Mouse():
         self.but1_pressed = False
         self.but2_pressed = False
         self.but3_pressed = False
+        self.but1_brush = brush(80, 180, 60, alpha=175)
+        self.but2_brush = brush(180, 60, 80, alpha=175)
+        self.but3_brush = brush(60, 80, 180, alpha=175)
         self.area_size = 10
 
     def pressed(self):
@@ -232,12 +237,9 @@ class Mouse():
 
     def draw(self, qp):
         old_brush = qp.brush()
-        if self.but1_pressed:
-            qp.setBrush(brush(80, 180, 60, alpha=175))
-        if self.but2_pressed:
-            qp.setBrush(brush(180, 60, 80, alpha=175))
-        if self.but3_pressed:
-            qp.setBrush(brush(60, 80, 180, alpha=175))
+        self.but1_pressed and qp.setBrush(self.but1_brush)
+        self.but2_pressed and qp.setBrush(self.but2_brush)
+        self.but3_pressed and qp.setBrush(self.but3_brush)
         qp.drawEllipse(self.x-self.area_size,
                        self.y-self.area_size,
                        self.area_size*2,
@@ -245,12 +247,39 @@ class Mouse():
         qp.setBrush(old_brush)
 
 
-if __name__=='__main__':
-    global nnv_window
+class PlotFunction():
+    def __init__(self, size, shifted=False):
+        self.size = size
+        self.values = [0] * self.size
+        self.last_value = 0
+        self.shifted = shifted
+
+    def set_size(self, new_size):
+        self.size = new_size
+        self.values = [0] * self.size
+        self.last_value = 0
+
+    def add_value(self, value):
+        self.last_value += 1
+        if self.last_value >= self.size:
+            self.last_value = 0
+        self.values[self.last_value] = value
+
+    def __getitem__(self, i):
+        return self.values[(i + (self.last_value+1)*self.shifted) % self.size]
+
+    def __len__(self):
+        return self.size
+
+
+def main():
     application = QtGui.QApplication(sys.argv)
     primitive = Primitive()
     nnv_window = NeuralNetworkViewer(primitive.brain)
     window = MainWindow(primitive, nnv_window)
     window.show()
-    nnv_window.show()
+    # nnv_window.show()
     sys.exit(application.exec_())
+
+if __name__=='__main__':
+    main()
