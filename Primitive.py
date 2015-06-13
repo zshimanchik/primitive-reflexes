@@ -28,7 +28,7 @@ class Primitive():
         self.first_state = True
 
 
-        self.brain = NeuralNetwork([self.sensor_count, 10, 2], learn_rate=0.05)
+        self.brain = NeuralNetwork([self.sensor_count, 10, 3], learn_rate=0.05)
         # self.brain = NetworkTest.make_net(self.sensor_count)
 
     def sensors_positions(self):
@@ -39,8 +39,8 @@ class Primitive():
         return res
 
     def update(self, sensors_values):
-        answer = self.brain.calculate(sensors_values)
-        print("inp={} answ={:.6f}, {:.6f}".format(sensors_values, answer[0], answer[1]))
+        answer = self.brain.calculate(sensors_values, random_value=0.1)
+        print("inp={} answ={:.6f}, {:.6f}, {:.6f}".format(sensors_values, answer[0], answer[1], answer[2]))
 
         if abs(self.promotion) < 0.000001:
             self.idle_time += 1
@@ -57,6 +57,7 @@ class Primitive():
         # self._move(answer[0]*2, answer[1]*2)
         # self._grow_up(answer[2]*2)
         self.move(answer[0], answer[1])
+        self.grow_up(answer[2])
 
     def change_state(self, delta):
         self.state += delta
@@ -76,7 +77,8 @@ class Primitive():
                 else:
                     self.scaled_promotion = math.copysign(0.004, self.promotion)
 
-                self.brain.teach(-self.scaled_promotion)
+                # self.brain.teach(-self.scaled_promotion)
+                self.brain.teach_considering_random(self.scaled_promotion)
             else:
                 print("{:.6f} - filtered".format(self.promotion))
         else:
@@ -87,7 +89,7 @@ class Primitive():
         self.x += dx
         self.y += dy
 
-    def _grow_up(self, d_size):
+    def grow_up(self, d_size):
         self.size += d_size
         self.size = max(self.size, 14)
         self.size = min(self.size, 40)

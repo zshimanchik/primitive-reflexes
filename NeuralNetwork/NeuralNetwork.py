@@ -1,5 +1,6 @@
 from Layer import Layer, InputLayer, ContextLayer
 import math
+import random
 
 
 class NeuralNetwork:
@@ -46,10 +47,24 @@ class NeuralNetwork:
     def __getitem__(self, i):
         return self.layers[i]
 
-    def calculate(self, x):
+    def calculate(self, x, random_value=None):
         self.input_layer.calculate(x)
         self.input_layer.notify_listeners()
+        if random_value:
+            for neuron in self.output_layer:
+                neuron.out += (random.random()*2-1)*random_value
         return self.output_layer.get_output_values()
+
+    def teach_considering_random(self, promotion_value):
+        answer_with_random = self.output_layer.get_output_values()
+        answer_without_random = self.calculate(self.input_layer.input_values)
+        self.output_layer.teach_output_layer2(promotion_value, answer_with_random)
+
+        # teach middle layers
+        self.middle_layer.teach_middle_layer(promotion_value)
+
+        for layer in self:
+            layer.commit_teach()
 
     def teach(self, error_value):
         self.output_layer.teach_output_layer(self.learn_rate, error_value)
