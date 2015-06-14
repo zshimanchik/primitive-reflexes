@@ -39,7 +39,7 @@ class NeuralNetwork:
         self.input_layer.notify_listeners()
         if random_value:
             for neuron in self.output_layer:
-                neuron.out += (random.random()*2-1)*random_value
+                neuron.out += (random.random() - (1 - neuron.out) / 2) * random_value
         return self.output_layer.get_output_values()
 
     def teach_considering_random(self, stimulation_value):
