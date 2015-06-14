@@ -15,6 +15,9 @@ def brush(r, g, b, alpha=255):
 
 
 class MainWindow(QtGui.QWidget):
+    INTERSECT_VALUE_TO_INFLUENCE_VALUE_RATIO = 1/200.0
+    PLOT_ZOOM = 800
+
     def __init__(self, primitive, nnv_window):
         super(MainWindow, self).__init__()
         self.setWindowTitle("Main Windows")
@@ -25,10 +28,9 @@ class MainWindow(QtGui.QWidget):
 
         self.stimulation_func = PlotFunction(self.width(), shifted=True)
         self.state_func = PlotFunction(self.width(), shifted=True)
-        self.scaled_prom_func = PlotFunction(self.width(), shifted=True)
+        self.brain_stimulation_func = PlotFunction(self.width(), shifted=True)
         self.draw_plots = False
 
-        # self.timer_interval = 300
         self.timer_interval = 300
         self.timer = QtCore.QBasicTimer()
         self.timer.start(self.timer_interval, self)
@@ -36,17 +38,16 @@ class MainWindow(QtGui.QWidget):
         self.auto_teach_counter = 0
 
     def timerEvent(self, event):
-        self.setWindowTitle("{:.4f} : {:.6f} : {:.6f}".format(self.prim.state, self.prim.stimulation,
-                                                                       self.prim.scaled_stimulation))
+        self.setWindowTitle("{:.4f} : {:.6f} : {:.6f}"
+                            .format(self.prim.state, self.prim.stimulation, self.prim.brain_stimulation))
         self.update_primitive_position()
         if self.draw_plots:
             self.state_func.add_value(self.prim.state)
             self.stimulation_func.add_value(self.prim.stimulation)
-            self.scaled_prom_func.add_value(self.prim.scaled_stimulation)
+            self.brain_stimulation_func.add_value(self.prim.brain_stimulation)
 
-        state_delta = self.get_state_delta()
-
-        self.prim.change_state(state_delta)
+        influence_value = self.get_influence_value()
+        self.prim.change_state(influence_value)
         sensors_values = [self.get_sensor_value(x, y) for x, y in self.prim.sensors_positions()]
         self.prim.update(sensors_values)
 
@@ -70,10 +71,10 @@ class MainWindow(QtGui.QWidget):
                 return -1.0
         return 0.0
 
-    def get_state_delta(self):
+    def get_influence_value(self):
         val = 0
         if self.mouse.but1_pressed or self.mouse.but2_pressed:
-            val = self.calc_intersect_value()/5000.0
+            val = self.calc_intersect_value() * MainWindow.INTERSECT_VALUE_TO_INFLUENCE_VALUE_RATIO
             if self.mouse.but2_pressed:
                 val *= -1
         return val
@@ -90,22 +91,19 @@ class MainWindow(QtGui.QWidget):
 
         # drawing plots
         if self.draw_plots:
-            zoom = 8000
             qp.setPen(QtCore.Qt.gray)
-            qp.drawLine(0, Primitive.stimulation_filter * zoom + 200, len(self.stimulation_func),
-                        Primitive.stimulation_filter * zoom + 200)
-            qp.drawLine(0, -Primitive.stimulation_filter * zoom + 200, len(self.stimulation_func),
-                        -Primitive.stimulation_filter * zoom + 200)
             qp.drawLine(0, 200, len(self.stimulation_func), 200)
             qp.setPen(QtCore.Qt.darkCyan)
             for i in range(len(self.state_func)-1):
                 qp.drawLine(i, -self.state_func[i]*70 + 200, i+1, -self.state_func[i+1]*70 + 200)
             qp.setPen(QtCore.Qt.darkBlue)
-            for i in range(len(self.scaled_prom_func)-1):
-                qp.drawLine(i, -self.scaled_prom_func[i]*zoom + 200, i+1, -self.scaled_prom_func[i+1]*zoom + 200)
+            for i in range(len(self.brain_stimulation_func)-1):
+                qp.drawLine(i, -self.brain_stimulation_func[i] * MainWindow.PLOT_ZOOM + 200,
+                            i+1, -self.brain_stimulation_func[i+1] * MainWindow.PLOT_ZOOM + 200)
             qp.setPen(QtCore.Qt.red)
             for i in range(len(self.stimulation_func)-1):
-                qp.drawLine(i, -self.stimulation_func[i]*zoom + 200, i+1, -self.stimulation_func[i+1]*zoom + 200)
+                qp.drawLine(i, -self.stimulation_func[i] * MainWindow.PLOT_ZOOM + 200,
+                            i+1, -self.stimulation_func[i+1] * MainWindow.PLOT_ZOOM + 200)
         # drawing primitive
         qp.setPen(QtCore.Qt.black)
         qp.setBrush(brush(170, 170, 170))
@@ -172,7 +170,7 @@ class MainWindow(QtGui.QWidget):
                 self.repaint()
 
     def keyPressEvent(self, event):
-        if Primitive.debug:
+        if Primitive.DEBUG:
             print("key={} ".format(event.key()))
         if event.key() == 32:  # space
             if self.timer.isActive():
@@ -195,13 +193,13 @@ class MainWindow(QtGui.QWidget):
             self.set_timer_interval(1)
         elif event.key() == 88:  # x
             self.prim.brain.context_layer.clean()
-            if Primitive.debug:
+            if Primitive.DEBUG:
                 print("context cleared")
         elif event.key() == 70:  # f
             self.mouse.fixed = not self.mouse.fixed
         elif event.key() == 65:  # a
             self.auto_teach = not self.auto_teach
-            if Primitive.debug:
+            if Primitive.DEBUG:
                 print("auto teach = {}".format(self.auto_teach))
         elif event.key() == 78:  # n
             self.nnv_window.setVisible(not self.nnv_window.isVisible())
@@ -214,7 +212,7 @@ class MainWindow(QtGui.QWidget):
     def resizeEvent(self, event):
         self.stimulation_func.set_size(self.width())
         self.state_func.set_size(self.width())
-        self.scaled_prom_func.set_size(self.width())
+        self.brain_stimulation_func.set_size(self.width())
 
     def closeEvent(self, event):
         self.nnv_window.close()

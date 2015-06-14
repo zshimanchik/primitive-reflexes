@@ -5,10 +5,9 @@ from NeuralNetwork.NeuralNetwork import NeuralNetwork
 
 
 class Primitive():
-    debug = not (not __debug__ or not False)
-    stimulation_filter = 0.015
-    fixed_stimulation = 0.004
-    norma = 0.005
+    DEBUG = not (not __debug__ or not True)
+    FIXED_BRAIN_STIMULATION = 0.05
+    RANDOM_VALUE_FOR_ANSWER = 0.1
 
     def __init__(self):
         self.x = 89
@@ -17,8 +16,8 @@ class Primitive():
         self.sensor_count = 16
         self.state = 0
         self.stimulation = 0
-        self.prev_influence_delta = 0
-        self.scaled_stimulation = 0
+        self.prev_influence = 0
+        self.brain_stimulation = 0
 
         self.idle_time = 0
         self.random_plan = []
@@ -35,40 +34,29 @@ class Primitive():
         return res
 
     def update(self, sensors_values):
-        answer = self.brain.calculate(sensors_values, random_value=0.1)
-        if self.debug:
+        answer = self.brain.calculate(sensors_values, random_value=self.RANDOM_VALUE_FOR_ANSWER)
+        if self.DEBUG:
             print("inp={} answ={:.6f}, {:.6f}, {:.6f}".format(sensors_values, answer[0], answer[1], answer[2]))
-
-        if abs(self.stimulation) < 0.000001:
-            self.idle_time += 1
-        else:
-            self.idle_time = 0
-
         self.move(answer[0], answer[1])
         self.grow_up(answer[2])
 
-    def change_state(self, influence_delta):
-        self.state += influence_delta
+    def change_state(self, influence_value):
+        self.state += influence_value
         self.state = max(self.state, -1.0)
         self.state = min(self.state, 1.0)
 
-        self.stimulation = influence_delta - self.prev_influence_delta
-        self.prev_influence_delta = influence_delta
-        if self.debug:
+        self.stimulation = influence_value - self.prev_influence
+        self.prev_influence = influence_value
+        if self.DEBUG:
             print("stimulation={:.6f}".format(self.stimulation))
 
         if self.first_state:
             self.first_state=False
             return
 
-        # filter huge spades
-        if abs(self.stimulation) < Primitive.stimulation_filter:
-            # signum(self.stimulation) * fixed_stimulation
-            self.scaled_stimulation = ((self.stimulation > 0) - (self.stimulation < 0)) * Primitive.fixed_stimulation
-            self.brain.teach_considering_random(self.scaled_stimulation)
-        else:
-            if self.debug:
-                print("{:.6f} - filtered".format(self.stimulation))
+        # signum(self.stimulation) * fixed_stimulation
+        self.brain_stimulation = ((self.stimulation > 0) - (self.stimulation < 0)) * Primitive.FIXED_BRAIN_STIMULATION
+        self.brain.teach_considering_random(self.brain_stimulation)
 
     def move(self, dx, dy):
         self.x += dx
