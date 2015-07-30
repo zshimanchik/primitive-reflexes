@@ -2,13 +2,17 @@ __author__ = 'zshimanchik'
 import sys
 import math
 import random
+import time
+from multiprocessing import Pool
 
 from PyQt4.QtGui import QBrush, QColor
 from PyQt4 import QtGui, QtCore
 
 from Primitive import Primitive
 from NeuralNetworkViewer import NeuralNetworkViewer
+from IntersectCalculation import calc_triangle_and_circle_intersect_2
 
+pool = Pool(3)
 
 def brush(r, g, b, alpha=255):
     return QBrush(QColor(r, g, b, alpha))
@@ -27,7 +31,6 @@ class MainWindow(QtGui.QWidget):
         self.nnv_window = nnv_window
 
         self.stimulation_func = PlotFunction(self.width(), shifted=True)
-        self.state_func = PlotFunction(self.width(), shifted=True)
         self.brain_stimulation_func = PlotFunction(self.width(), shifted=True)
         self.draw_plots = False
 
@@ -37,22 +40,26 @@ class MainWindow(QtGui.QWidget):
         self.auto_teach = False
         self.auto_teach_counter = 0
 
+        self.fps_prev_time = time.time()
+
     def timerEvent(self, event):
-        self.setWindowTitle("{:.4f} : {:.6f} : {:.6f}"
-                            .format(self.prim.state, self.prim.stimulation, self.prim.brain_stimulation))
+        now = time.time()
+        self.setWindowTitle("fps={}".format(now-self.fps_prev_time))
+        self.fps_prev_time = now
+
         self.update_primitive_position()
         if self.draw_plots:
-            self.state_func.add_value(self.prim.state)
             self.stimulation_func.add_value(self.prim.stimulation)
             self.brain_stimulation_func.add_value(self.prim.brain_stimulation)
 
         influence_value = self.get_influence_value()
         self.prim.change_state(influence_value)
-        sensors_values = [self.get_sensor_value(x, y) for x, y in self.prim.sensors_positions()]
+        sensors_values = [self.get_sensor_value(x, y) for x, y in self.prim.sensors]
         self.prim.update(sensors_values)
 
-        self.repaint()
-        self.nnv_window.repaint()
+        self.update()
+        self.nnv_window.update()
+
         if self.auto_teach:
             self.auto_teach_counter -= 1
             if self.auto_teach_counter <= 0:
@@ -61,7 +68,7 @@ class MainWindow(QtGui.QWidget):
                 self.mouse.but2_pressed = not self.mouse.but1_pressed
                 self.mouse.x = random.randint(0, self.width())
                 self.mouse.y = random.randint(0, self.height())
-                self.mouse.area_size = random.randint(10,40)
+                self.mouse.area_size = random.randint(20,60)
 
     def get_sensor_value(self, x, y):
         if self.mouse.pressed() and math.sqrt((self.mouse.x-x)**2 + (self.mouse.y-y)**2) < self.mouse.area_size:
@@ -79,11 +86,20 @@ class MainWindow(QtGui.QWidget):
                 val *= -1
         return val
 
+    def triangles_generator(self):
+        for i in range(-1, len(self.prim.sensors)-1):
+            yield (self.prim.middle_x, self.prim.middle_y), self.prim.sensors[i], self.prim.sensors[i+1], (self.mouse.x, self.mouse.y), self.mouse.area_size
+
     def calc_intersect_value(self):
-        dist = math.sqrt((self.mouse.x-self.prim.x)**2 + (self.mouse.y-self.prim.y)**2)
-        intersect_length = max(0, self.mouse.area_size+self.prim.size-dist)
-        intersect_length = min(intersect_length, self.mouse.area_size*2, self.prim.size*2)
-        return (intersect_length**2) / 2
+        return sum(pool.map(calc_triangle_and_circle_intersect_2, self.triangles_generator()))
+        # res = 0
+        # for i in range(-1, len(self.prim.sensors)-1):
+        #     res += calc_triangle_and_circle_intersect((self.prim.middle_x, self.prim.middle_y),
+        #                                                    self.prim.sensors[i],
+        #                                                    self.prim.sensors[i+1],
+        #                                                    (self.mouse.x, self.mouse.y),
+        #                                                    self.mouse.area_size)
+        # return res
 
     def paintEvent(self, event):
         qp = QtGui.QPainter()
@@ -93,9 +109,6 @@ class MainWindow(QtGui.QWidget):
         if self.draw_plots:
             qp.setPen(QtCore.Qt.gray)
             qp.drawLine(0, 200, len(self.stimulation_func), 200)
-            qp.setPen(QtCore.Qt.darkCyan)
-            for i in range(len(self.state_func)-1):
-                qp.drawLine(i, -self.state_func[i]*70 + 200, i+1, -self.state_func[i+1]*70 + 200)
             qp.setPen(QtCore.Qt.darkBlue)
             for i in range(len(self.brain_stimulation_func)-1):
                 qp.drawLine(i, -self.brain_stimulation_func[i] * MainWindow.PLOT_ZOOM + 200,
@@ -107,14 +120,15 @@ class MainWindow(QtGui.QWidget):
         # drawing primitive
         qp.setPen(QtCore.Qt.black)
         qp.setBrush(brush(170, 170, 170))
-        qp.drawEllipse(self.prim.x - self.prim.size,
-                       self.prim.y - self.prim.size,
-                       self.prim.size*2,
-                       self.prim.size*2)
+        qp.drawPolygon(*[QtCore.QPoint(*sensor) for sensor in self.prim.sensors])
         # drawing sensors
-        qp.setBrush(brush(0, 0, 0))
-        for sensor_pos in self.prim.sensors_positions():
-            qp.drawEllipse(sensor_pos[0]-3, sensor_pos[1]-3, 6, 6)
+        color = 0
+        for sensor in self.prim.sensors:
+            qp.setBrush(brush(color, color, color))
+            qp.drawEllipse(sensor[0]-3, sensor[1]-3, 6, 6)
+            color += 255/len(self.prim.sensors)
+        qp.setBrush(brush(255,0,0))
+        qp.drawEllipse(self.prim.middle_x-3, self.prim.middle_y-3, 6, 6)
         # drawing mouse
         if self.mouse.pressed():
             self.mouse.draw(qp)
@@ -122,15 +136,12 @@ class MainWindow(QtGui.QWidget):
         qp.end()
 
     def update_primitive_position(self):
-        if self.prim.x < 0:
-            self.prim.x = self.width()-10
-        if self.prim.x > self.width():
-            self.prim.x = 10
-
-        if self.prim.y < 0:
-            self.prim.y = self.height() - 10
-        if self.prim.y > self.height():
-            self.prim.y = 10
+        if self.prim.middle_x < 0 or self.prim.middle_x > self.width() or self.prim.middle_y < 0 or self.prim.middle_y > self.height():
+            dx = self.width()/2 - self.prim.middle_x
+            dy = self.height()/2 - self.prim.middle_y
+            for sensor in self.prim.sensors:
+                sensor[0] += dx
+                sensor[1] += dy
 
     def mousePressEvent(self, event):
         self.mouse.fixed = False
@@ -211,7 +222,6 @@ class MainWindow(QtGui.QWidget):
 
     def resizeEvent(self, event):
         self.stimulation_func.set_size(self.width())
-        self.state_func.set_size(self.width())
         self.brain_stimulation_func.set_size(self.width())
 
     def closeEvent(self, event):

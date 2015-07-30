@@ -1,44 +1,50 @@
 __author__ = 'zshimanchik'
 import math
+import random
 
 from NeuralNetwork.NeuralNetwork import NeuralNetwork
 
 
 class Primitive():
-    DEBUG = not (not __debug__ or not True)
-    FIXED_BRAIN_STIMULATION = 0.05
-    RANDOM_VALUE_FOR_ANSWER = 0.1
+    DEBUG = True
+    FIXED_BRAIN_STIMULATION = 0.15
+    RANDOM_VALUE_FOR_ANSWER = 0.2
+    SENSOR_COUNT = 8
+    MIN_SENSOR_RADIUS = 20
+    MAX_SENSOR_RADIUS = 60
+    MAX_SENSOR_DISTANCE = MAX_SENSOR_RADIUS
 
     def __init__(self):
-        self.x = 89
-        self.y = 120
-        self.size = 30
-        self.sensor_count = 16
+        self.sensors = Primitive._generate_sensors(sensor_count=Primitive.SENSOR_COUNT, x=100, y=100, radius=60)
         self.state = 0
         self.stimulation = 0
         self.prev_influence = 0
         self.brain_stimulation = 0
+        self.middle_x, self.middle_y = 20, 20
 
         self.idle_time = 0
         self.random_plan = []
         self.first_state = True
 
-        self.brain = NeuralNetwork([self.sensor_count, 10, 3], learn_rate=0.05)
+        self.brain = NeuralNetwork([len(self.sensors), 15, len(self.sensors) * 2], learn_rate=0.05)
         # self.brain = NetworkTest.make_net(self.sensor_count)
 
-    def sensors_positions(self):
-        res = []
-        for i in range(self.sensor_count):
-            angle = i * math.pi * 2 / self.sensor_count
-            res.append((math.cos(angle) * self.size + self.x, math.sin(angle) * self.size + self.y))
-        return res
+    @staticmethod
+    def _generate_sensors(sensor_count, x, y, radius):
+        angle_peace = math.pi * 2 / sensor_count
+        return [[math.cos(i * angle_peace) * radius + x + random.randint(-5, 5), math.sin(i * angle_peace) * radius + y]
+                for i in range(sensor_count)]
 
     def update(self, sensors_values):
         answer = self.brain.calculate(sensors_values, random_value=self.RANDOM_VALUE_FOR_ANSWER)
+        # if self.DEBUG:
+        # print("inp={} answ={:.6f}, {:.6f}, {:.6f}".format(sensors_values, answer[0], answer[1], answer[2]))
+
+        # self.move([(random.randint(-2, 2), random.randint(-2, 2)) for _ in self.sensors])
+        self.move([(answer[i], answer[i + 1]) for i in range(0, len(answer), 2)])
         if self.DEBUG:
-            print("inp={} answ={:.6f}, {:.6f}, {:.6f}".format(sensors_values, answer[0], answer[1], answer[2]))
-        self.move(answer[0], answer[1])
-        self.grow_up(answer[2])
+            # print(("{:.4f} "*(len(answer)/2)).format(*[math.sqrt(answer[i]**2 + answer[i + 1]**2) for i in range(0, len(answer), 2)]))
+            print(("{:.4f} "*len(answer)).format(*answer))
 
     def change_state(self, influence_value):
         self.state += influence_value
@@ -49,20 +55,56 @@ class Primitive():
         self.prev_influence = influence_value
         if self.DEBUG:
             print("stimulation={:.6f}".format(self.stimulation))
-
+        # TODO can it be deleted?
         if self.first_state:
-            self.first_state=False
+            self.first_state = False
             return
 
         # signum(self.stimulation) * fixed_stimulation
         self.brain_stimulation = ((self.stimulation > 0) - (self.stimulation < 0)) * Primitive.FIXED_BRAIN_STIMULATION
         self.brain.teach_considering_random(self.brain_stimulation)
 
-    def move(self, dx, dy):
-        self.x += dx
-        self.y += dy
+    def move(self, position_diffs):
+        assert len(position_diffs) == len(self.sensors)
+        for sensor, diff in zip(self.sensors, position_diffs):
+            sensor[0] += diff[0]
+            sensor[1] += diff[1]
+        self.check_shape()
 
-    def grow_up(self, d_size):
-        self.size += d_size
-        self.size = max(self.size, 14)
-        self.size = min(self.size, 40)
+    def check_shape(self):
+        self.middle_x = sum(sensor[0] for sensor in self.sensors) / len(self.sensors)
+        self.middle_y = sum(sensor[1] for sensor in self.sensors) / len(self.sensors)
+
+        polar_sensors = []
+        for sensor in self.sensors:
+            diff_x = sensor[0] - self.middle_x
+            diff_y = sensor[1] - self.middle_y
+            angle = math.atan2(diff_y, diff_x)
+            if angle < 0:
+                angle += math.pi * 2
+            length = math.sqrt(diff_x ** 2 + diff_y ** 2)
+            polar_sensors.append([angle, length])
+
+        prev = polar_sensors[-1]
+        for sensor in polar_sensors:
+            if prev[0] + (sensor[0] > prev[0]) * math.pi * 2 < sensor[0] + math.pi:
+                sensor[0], prev[0] = prev[0], sensor[0]
+            sensor[1] = max(sensor[1], Primitive.MIN_SENSOR_RADIUS)
+            sensor[1] = min(sensor[1], Primitive.MAX_SENSOR_RADIUS)
+            prev = sensor
+
+        self.sensors = [[math.cos(angle) * length + self.middle_x, math.sin(angle) * length + self.middle_y]
+                        for angle, length in polar_sensors]
+        for i in range(-1, len(self.sensors)-1, 1):
+            prev = self.sensors[i]
+            cur = self.sensors[i + 1]
+            distance = math.sqrt((cur[0] - prev[0]) ** 2 + (cur[1] - prev[1]) ** 2)
+            if distance > Primitive.MAX_SENSOR_DISTANCE:
+                dd = (distance - Primitive.MAX_SENSOR_DISTANCE) / 2.0
+                vec = (cur[0] - prev[0]) / distance * dd, (cur[1] - prev[1]) / distance * dd
+                prev[0] += vec[0]
+                prev[1] += vec[1]
+                cur[0] -= vec[0]
+                cur[1] -= vec[1]
+
+
