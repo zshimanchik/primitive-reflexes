@@ -5,8 +5,10 @@ from NeuralNetwork.NeuralNetwork import NeuralNetwork
 
 
 class Primitive():
-    DEBUG = not (not __debug__ or not True)
-    FIXED_BRAIN_STIMULATION = 0.05
+    DEBUG = True
+    MIN_BRAIN_STIMULATION = 0.04
+    MAX_BRAIN_STIMULATION = 0.1
+    BRAIN_STIMULATION_FILTER_THRESHOLD = 0.3
     RANDOM_VALUE_FOR_ANSWER = 0.1
 
     def __init__(self):
@@ -23,7 +25,7 @@ class Primitive():
         self.random_plan = []
         self.first_state = True
 
-        self.brain = NeuralNetwork([self.sensor_count, 10, 3], learn_rate=0.05)
+        self.brain = NeuralNetwork([self.sensor_count * 3, 10, 3], learn_rate=0.05)
         # self.brain = NetworkTest.make_net(self.sensor_count)
 
     def sensors_positions(self):
@@ -36,7 +38,8 @@ class Primitive():
     def update(self, sensors_values):
         answer = self.brain.calculate(sensors_values, random_value=self.RANDOM_VALUE_FOR_ANSWER)
         if self.DEBUG:
-            print("inp={} answ={:.6f}, {:.6f}, {:.6f}".format(sensors_values, answer[0], answer[1], answer[2]))
+            sensors_values = zip(sensors_values[::3], sensors_values[1::3], sensors_values[2::3])
+            print("answ={:.6f}, {:.6f}, {:.6f} inp={}".format(answer[0], answer[1], answer[2], sensors_values))
         self.move(answer[0], answer[1])
         self.grow_up(answer[2])
 
@@ -50,12 +53,11 @@ class Primitive():
         if self.DEBUG:
             print("stimulation={:.6f}".format(self.stimulation))
 
-        if self.first_state:
-            self.first_state=False
-            return
-
-        # signum(self.stimulation) * fixed_stimulation
-        self.brain_stimulation = ((self.stimulation > 0) - (self.stimulation < 0)) * Primitive.FIXED_BRAIN_STIMULATION
+        # sign of self.stimulation
+        sign = ((self.stimulation > 0) - (self.stimulation < 0))
+        abs_stimulation = abs(self.stimulation)
+        self.brain_stimulation = (abs_stimulation < Primitive.BRAIN_STIMULATION_FILTER_THRESHOLD) * sign \
+                                 * min(max(Primitive.MIN_BRAIN_STIMULATION, abs_stimulation), Primitive.MAX_BRAIN_STIMULATION)
         self.brain.teach_considering_random(self.brain_stimulation)
 
     def move(self, dx, dy):
