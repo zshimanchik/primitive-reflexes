@@ -22,7 +22,7 @@ class MainWindow(QtGui.QWidget):
     BLACK = (0.0, 0.0, 0.0)
     RED = (1.0, 0.0, 0.0)
     GREEN = (0.0, 1.0, 0.0)
-    BLUE = (0.0, 0.0, 0.0)
+    BLUE = (0.0, 0.0, 1.0)
 
     def __init__(self, primitive, nnv_window):
         super(MainWindow, self).__init__()
@@ -64,8 +64,10 @@ class MainWindow(QtGui.QWidget):
             self.auto_teach_counter -= 1
             if self.auto_teach_counter <= 0:
                 self.auto_teach_counter = random.randint(500, 1000)
-                self.mouse.but1_pressed = random.randint(0, 1) == 0
-                self.mouse.but2_pressed = not self.mouse.but1_pressed
+                but = random.randint(0,2)
+                self.mouse.but1_pressed = but == 0
+                self.mouse.but2_pressed = but == 1
+                self.mouse.but3_pressed = but == 2
                 self.mouse.x = random.randint(0, self.width())
                 self.mouse.y = random.randint(0, self.height())
                 self.mouse.area_size = random.randint(10, 40)
@@ -215,6 +217,8 @@ class MainWindow(QtGui.QWidget):
             self.auto_teach = not self.auto_teach
             if Primitive.DEBUG:
                 print("auto teach = {}".format(self.auto_teach))
+        elif event.key() == 68: # d
+            Primitive.DEBUG = not Primitive.DEBUG
         elif event.key() == 78:  # n
             self.nnv_window.setVisible(not self.nnv_window.isVisible())
 

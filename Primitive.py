@@ -25,7 +25,7 @@ class Primitive():
         self.random_plan = []
         self.first_state = True
 
-        self.brain = NeuralNetwork([self.sensor_count * 3, 10, 3], random_value=self.RANDOM_VALUE_FOR_ANSWER, learn_rate=0.05)
+        self.brain = NeuralNetwork([self.sensor_count * 3, 18, 3], random_value=self.RANDOM_VALUE_FOR_ANSWER)
         # self.brain = NetworkTest.make_net(self.sensor_count)
 
     def sensors_positions(self):
@@ -58,7 +58,7 @@ class Primitive():
             return
 
         # sign of self.stimulation
-        sign = ((self.stimulation > 0) - (self.stimulation < 0))
+        sign = (self.stimulation > 0) - (self.stimulation < 0)
         abs_stimulation = abs(self.stimulation)
         self.brain_stimulation = (abs_stimulation < Primitive.BRAIN_STIMULATION_FILTER_THRESHOLD) * sign \
                                  * min(max(Primitive.MIN_BRAIN_STIMULATION, abs_stimulation), Primitive.MAX_BRAIN_STIMULATION)

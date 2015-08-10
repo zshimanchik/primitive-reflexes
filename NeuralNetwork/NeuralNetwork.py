@@ -1,14 +1,11 @@
-import random
-
 from Layer import Layer, InputLayer, RandomLayer
 
 
 class NeuralNetwork:
-    def __init__(self, shape, random_value, learn_rate=3.5):
+    def __init__(self, shape, random_value):
         self.layers = []
         self.shape = shape
         self.time = 0
-        self.learn_rate = learn_rate
 
         self.input_layer = InputLayer(shape[0])
 
