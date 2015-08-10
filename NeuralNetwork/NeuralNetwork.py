@@ -1,10 +1,10 @@
 import random
 
-from Layer import Layer, InputLayer
+from Layer import Layer, InputLayer, RandomLayer
 
 
 class NeuralNetwork:
-    def __init__(self, shape, learn_rate=3.5):
+    def __init__(self, shape, random_value, learn_rate=3.5):
         self.layers = []
         self.shape = shape
         self.time = 0
@@ -18,9 +18,13 @@ class NeuralNetwork:
         self.output_layer = Layer(shape[2], self.middle_layer.neurons)
         self.middle_layer.listeners.append(self.output_layer)
 
+        self.random_layer = RandomLayer(shape[2], self.output_layer.neurons, random_value)
+        self.output_layer.listeners.append(self.random_layer)
+
         self.layers.append(self.input_layer)
         self.layers.append(self.middle_layer)
         self.layers.append(self.output_layer)
+        self.layers.append(self.random_layer)
 
     def __len__(self):
         return len(self.shape)
@@ -28,7 +32,7 @@ class NeuralNetwork:
     def __getitem__(self, i):
         return self.layers[i]
 
-    def calculate(self, x, random_value=None):
+    def calculate(self, x):
         """
         calculate vector x, if random value is set, add to result vector value (random()*2-1)*random_value
         :param x: input vector
@@ -37,10 +41,7 @@ class NeuralNetwork:
         """
         self.input_layer.calculate(x)
         self.input_layer.notify_listeners()
-        if random_value:
-            for neuron in self.output_layer:
-                neuron.out += (random.random() - (1 - neuron.out) / 2) * random_value
-        return self.output_layer.get_output_values()
+        return self.random_layer.get_output_values()
 
     def teach_considering_random(self, stimulation_value):
         """
@@ -51,8 +52,7 @@ class NeuralNetwork:
         For correct teaching, method recalculate input values=self.input_layer.input_values, without random.
         :param stimulation_value:
         """
-        answer_with_random = self.output_layer.get_output_values()
-        answer_without_random = self.calculate(self.input_layer.input_values)
+        answer_with_random = self.random_layer.get_output_values()
         if stimulation_value < 0:
             answer_with_random = [-x for x in answer_with_random]
             stimulation_value = -stimulation_value

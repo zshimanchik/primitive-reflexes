@@ -59,6 +59,16 @@ class InputNeuron(_AbstractNeuron):
         return self.out
 
 
+class RandomNeuron(_AbstractNeuron):
+    def __init__(self, random_value):
+        _AbstractNeuron.__init__(self)
+        self.random_value = random_value
+
+    def calculate(self, x):
+        self.out = x + (random() - (1 - self.out) / 2) * self.random_value
+        return self.out
+
+
 class BiasNeuron(_AbstractNeuron):
     def __init__(self):
         _AbstractNeuron.__init__(self)

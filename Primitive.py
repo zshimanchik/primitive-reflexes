@@ -25,7 +25,7 @@ class Primitive():
         self.random_plan = []
         self.first_state = True
 
-        self.brain = NeuralNetwork([self.sensor_count * 3, 10, 3], learn_rate=0.05)
+        self.brain = NeuralNetwork([self.sensor_count * 3, 10, 3], random_value=self.RANDOM_VALUE_FOR_ANSWER, learn_rate=0.05)
         # self.brain = NetworkTest.make_net(self.sensor_count)
 
     def sensors_positions(self):
@@ -36,7 +36,7 @@ class Primitive():
         return res
 
     def update(self, sensors_values):
-        answer = self.brain.calculate(sensors_values, random_value=self.RANDOM_VALUE_FOR_ANSWER)
+        answer = self.brain.calculate(sensors_values)
         if self.DEBUG:
             sensors_values = zip(sensors_values[::3], sensors_values[1::3], sensors_values[2::3])
             print("answ={:.6f}, {:.6f}, {:.6f} inp={}".format(answer[0], answer[1], answer[2], sensors_values))
@@ -52,6 +52,10 @@ class Primitive():
         self.prev_influence = influence_value
         if self.DEBUG:
             print("stimulation={:.6f}".format(self.stimulation))
+
+        if self.first_state:
+            self.first_state=False
+            return
 
         # sign of self.stimulation
         sign = ((self.stimulation > 0) - (self.stimulation < 0))
