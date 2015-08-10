@@ -7,7 +7,9 @@ from NeuralNetwork.NeuralNetwork import NeuralNetwork
 
 class Primitive():
     DEBUG = True
-    FIXED_BRAIN_STIMULATION = 0.15
+    MIN_BRAIN_STIMULATION = 0.1
+    MAX_BRAIN_STIMULATION = 0.2
+    BRAIN_STIMULATION_FILTER_THRESHOLD = 0.5
     RANDOM_VALUE_FOR_ANSWER = 0.2
     SENSOR_COUNT = 8
     MIN_SENSOR_RADIUS = 20
@@ -26,7 +28,7 @@ class Primitive():
         self.random_plan = []
         self.first_state = True
 
-        self.brain = NeuralNetwork([len(self.sensors), 15, len(self.sensors) * 2], learn_rate=0.05)
+        self.brain = NeuralNetwork([len(self.sensors), 23, len(self.sensors) * 2], Primitive.RANDOM_VALUE_FOR_ANSWER)
         # self.brain = NetworkTest.make_net(self.sensor_count)
 
     @staticmethod
@@ -36,15 +38,11 @@ class Primitive():
                 for i in range(sensor_count)]
 
     def update(self, sensors_values):
-        answer = self.brain.calculate(sensors_values, random_value=self.RANDOM_VALUE_FOR_ANSWER)
-        # if self.DEBUG:
-        # print("inp={} answ={:.6f}, {:.6f}, {:.6f}".format(sensors_values, answer[0], answer[1], answer[2]))
-
-        # self.move([(random.randint(-2, 2), random.randint(-2, 2)) for _ in self.sensors])
-        self.move([(answer[i], answer[i + 1]) for i in range(0, len(answer), 2)])
+        answer = self.brain.calculate(sensors_values)
+        # self.move([(answer[i], answer[i + 1]) for i in range(0, len(answer), 2)])
+        self.move([(x,y) for x, y in zip(answer[::2], answer[1::2])])
         if self.DEBUG:
-            # print(("{:.4f} "*(len(answer)/2)).format(*[math.sqrt(answer[i]**2 + answer[i + 1]**2) for i in range(0, len(answer), 2)]))
-            print(("{:.4f} "*len(answer)).format(*answer))
+            print(("{:.4f} " * len(answer)).format(*answer))
 
     def change_state(self, influence_value):
         self.state += influence_value
@@ -60,8 +58,11 @@ class Primitive():
             self.first_state = False
             return
 
-        # signum(self.stimulation) * fixed_stimulation
-        self.brain_stimulation = ((self.stimulation > 0) - (self.stimulation < 0)) * Primitive.FIXED_BRAIN_STIMULATION
+        # sign of self.stimulation
+        sign = (self.stimulation > 0) - (self.stimulation < 0)
+        abs_stimulation = abs(self.stimulation)
+        self.brain_stimulation = (abs_stimulation < Primitive.BRAIN_STIMULATION_FILTER_THRESHOLD) * sign \
+                                 * min(max(Primitive.MIN_BRAIN_STIMULATION, abs_stimulation), Primitive.MAX_BRAIN_STIMULATION)
         self.brain.teach_considering_random(self.brain_stimulation)
 
     def move(self, position_diffs):
@@ -95,7 +96,7 @@ class Primitive():
 
         self.sensors = [[math.cos(angle) * length + self.middle_x, math.sin(angle) * length + self.middle_y]
                         for angle, length in polar_sensors]
-        for i in range(-1, len(self.sensors)-1, 1):
+        for i in range(-1, len(self.sensors) - 1, 1):
             prev = self.sensors[i]
             cur = self.sensors[i + 1]
             distance = math.sqrt((cur[0] - prev[0]) ** 2 + (cur[1] - prev[1]) ** 2)

@@ -1,4 +1,4 @@
-from Neuron import Neuron, InputNeuron
+from Neuron import Neuron, InputNeuron, RandomNeuron
 
 
 class _AbstractLayer():
@@ -41,6 +41,9 @@ class _AbstractLayer():
 
 
 class InputLayer(_AbstractLayer):
+    """
+    Input layer with connection ONE to ONE. using just for providing values to the next layers
+    """
     def __init__(self, size):
         _AbstractLayer.__init__(self)
         self.neurons = [InputNeuron() for _ in range(size)]
@@ -52,7 +55,25 @@ class InputLayer(_AbstractLayer):
         return [self[i].calculate(self.input_values[i]) for i in range(len(self))]
 
 
+class RandomLayer(InputLayer):
+    """
+    Layer with connection ONE to ONE
+    it adds some random value (-random_value ; +random_value) to output value of the previous layer
+    """
+    def __init__(self, size, input, random_value):
+        _AbstractLayer.__init__(self)
+        self.input = input
+        self.neurons = [RandomNeuron(random_value) for _ in range(size)]
+
+    def calculate(self, x=None):
+        _AbstractLayer.calculate(self, x)
+        return [self[i].calculate(self.input_values[i]) for i in range(len(self))]
+
+
 class Layer(_AbstractLayer):
+    """
+    Layer with connection ALL_TO_ALL
+    """
     def __init__(self, size, input):
         _AbstractLayer.__init__(self)
         self.input = input
