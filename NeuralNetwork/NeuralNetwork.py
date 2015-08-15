@@ -23,6 +23,9 @@ class NeuralNetwork:
         self.layers.append(self.output_layer)
         self.layers.append(self.random_layer)
 
+        self.max_history_length = 20
+        self.history = [([0] * shape[0], [0]*shape[2])] * self.max_history_length
+
     def __len__(self):
         return len(self.shape)
 
@@ -38,25 +41,37 @@ class NeuralNetwork:
         """
         self.input_layer.calculate(x)
         self.input_layer.notify_listeners()
+        self.history.pop(-1)
+        self.history.insert(0, (x, self.random_layer.get_output_values()))
         return self.random_layer.get_output_values()
 
-    def teach_considering_random(self, stimulation_value):
-        """
-        teach network with learn_rate = abs(stimulation_value). calculate with random value should be used before
-        using this method.
-        if stimulation_value > 0 then network teaches like usual by example, which is equals previous calculation result
-        if stimulation_value < 0: then example vector is opposite previous calculation result.
-        For correct teaching, method recalculate input values=self.input_layer.input_values, without random.
-        :param stimulation_value:
-        """
-        answer_with_random = self.random_layer.get_output_values()
+    def _teach(self, stimulation_value, input=None, output=None):
+        if input is not None:
+            self.input_layer.calculate(input)
+            self.input_layer.notify_listeners()
+        else:
+            output = self.random_layer.get_output_values()
+
         if stimulation_value < 0:
-            answer_with_random = [-x for x in answer_with_random]
+            output = [-x for x in output]
             stimulation_value = -stimulation_value
-        self.output_layer.teach_output_layer_by_sample(stimulation_value, answer_with_random)
+
+        self.output_layer.teach_output_layer_by_sample(stimulation_value, output)
 
         # teach middle layers
         self.middle_layer.teach_middle_layer(stimulation_value)
 
         for layer in self:
             layer.commit_teach()
+
+
+    def teach(self, stimulation_value):
+        """
+        teach network with learn_rate = abs(stimulation_value).
+        if stimulation_value > 0 then network teaches like usual by example, which is equals previous calculation result
+        if stimulation_value < 0: then example vector is opposite previous calculation result.
+        :param stimulation_value:
+        """
+        for input, output in self.history:
+            self._teach(stimulation_value, input, output)
+            stimulation_value /= 5.0

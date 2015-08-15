@@ -54,16 +54,12 @@ class Primitive():
         if self.DEBUG:
             print("stimulation={:.6f}".format(self.stimulation))
 
-        if self.first_state:
-            self.first_state=False
-            return
-
         # sign of self.stimulation
         sign = (self.stimulation > 0) - (self.stimulation < 0)
         abs_stimulation = abs(self.stimulation)
         self.brain_stimulation = (abs_stimulation < Primitive.BRAIN_STIMULATION_FILTER_THRESHOLD) * sign \
                                  * min(max(Primitive.MIN_BRAIN_STIMULATION, abs_stimulation), Primitive.MAX_BRAIN_STIMULATION)
-        self.brain.teach_considering_random(self.brain_stimulation)
+        self.brain.teach(self.brain_stimulation)
 
     def move(self, dx, dy):
         self.x += dx
