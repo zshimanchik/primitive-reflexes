@@ -14,6 +14,14 @@ def brush(r, g, b, alpha=255):
     return QBrush(QColor(r, g, b, alpha))
 
 
+def brush_f(color):
+    if MainWindow.BLUE == color:
+        return QBrush(QColor(66,170,255))
+    elif MainWindow.GREEN == color:
+        return QBrush(QColor(0,255,0))
+    return QBrush(QColor(color[0]*255, color[1]*255, color[2]*255))
+
+
 class MainWindow(QtGui.QWidget):
     INTERSECT_VALUE_TO_INFLUENCE_VALUE_RATIO = 1 / 200.0
     PLOT_ZOOM = 800
@@ -129,7 +137,8 @@ class MainWindow(QtGui.QWidget):
                        self.prim.size * 2)
         # drawing sensors
         qp.setBrush(brush(0, 0, 0))
-        for sensor_pos in self.prim.sensors_positions():
+        for sensor_pos, sensor_value in zip(self.prim.sensors_positions(), self.prim.sensor_values):
+            qp.setBrush(brush_f(sensor_value))
             qp.drawEllipse(sensor_pos[0] - 3, sensor_pos[1] - 3, 6, 6)
         # drawing mouse
         if self.mouse.pressed():
@@ -243,9 +252,9 @@ class Mouse(object):
         self.but1_pressed = False
         self.but2_pressed = False
         self.but3_pressed = False
-        self.but1_brush = brush(80, 180, 60, alpha=175)
-        self.but2_brush = brush(180, 60, 80, alpha=175)
-        self.but3_brush = brush(60, 80, 180, alpha=175)
+        self.but1_brush = brush(80, 180, 60, alpha=100)
+        self.but2_brush = brush(180, 60, 80, alpha=100)
+        self.but3_brush = brush(60, 80, 180, alpha=100)
         self._area_size = 10
         self._influence_area_size = self._area_size * MainWindow.GREEN_AREA_RATIO
 

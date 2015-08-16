@@ -16,6 +16,7 @@ class Primitive():
         self.y = 120
         self.size = 30
         self.sensor_count = 16
+        self.sensor_values = []
         self.state = 0
         self.stimulation = 0
         self.prev_influence = 0
@@ -36,10 +37,10 @@ class Primitive():
         return res
 
     def update(self, sensors_values):
+        self.sensor_values = zip(sensors_values[::3], sensors_values[1::3], sensors_values[2::3])
         answer = self.brain.calculate(sensors_values)
         if self.DEBUG:
-            sensors_values = zip(sensors_values[::3], sensors_values[1::3], sensors_values[2::3])
-            print("answ={:.6f}, {:.6f}, {:.6f} inp={}".format(answer[0], answer[1], answer[2], sensors_values))
+            print("answ={:.6f}, {:.6f}, {:.6f} inp={}".format(answer[0], answer[1], answer[2], self.sensor_values))
         self.move(answer[0], answer[1])
         self.grow_up(answer[2])
 
