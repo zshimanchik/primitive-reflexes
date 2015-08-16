@@ -86,7 +86,7 @@ class MainWindow(QtGui.QWidget):
             if self.mouse.but1_pressed:
                 return MainWindow.GREEN
             elif self.mouse.but2_pressed:
-                return MainWindow.RED
+                return MainWindow.BLUE
             elif self.mouse.but3_pressed:
                 if distance < self.mouse.influence_area_size:
                     return MainWindow.GREEN
@@ -95,11 +95,11 @@ class MainWindow(QtGui.QWidget):
         return MainWindow.BLACK
 
     def get_influence_value(self):
+        if self.mouse.but2_pressed:
+            return 0
         val = 0
         if self.mouse.pressed():
             val = self.calc_intersect_value() * MainWindow.INTERSECT_VALUE_TO_INFLUENCE_VALUE_RATIO
-            if self.mouse.but2_pressed:
-                val *= -1
         return val
 
     def calc_intersect_value(self):
@@ -280,7 +280,7 @@ class Mouse(object):
     def draw(self, qp):
         old_brush = qp.brush()
         self.but1_pressed and qp.setBrush(self.but1_brush)
-        self.but2_pressed and qp.setBrush(self.but2_brush)
+        self.but2_pressed and qp.setBrush(self.but3_brush)
         self.but3_pressed and qp.setBrush(self.but3_brush)
         qp.drawEllipse(self.x - self.area_size,
                        self.y - self.area_size,
