@@ -71,14 +71,24 @@ class MainWindow(QtGui.QWidget):
         if self.auto_teach:
             self.auto_teach_counter -= 1
             if self.auto_teach_counter <= 0:
-                self.auto_teach_counter = random.randint(500, 1000)
-                but = random.randint(0,2)
-                self.mouse.but1_pressed = but == 0
-                self.mouse.but2_pressed = but == 1
-                self.mouse.but3_pressed = but == 2
-                self.mouse.x = random.randint(0, self.width())
-                self.mouse.y = random.randint(0, self.height())
-                self.mouse.area_size = random.randint(10, 40)
+                if self.mouse.but3_pressed:
+                    self.mouse.but2_pressed = True
+                    self.mouse.but3_pressed = False
+                    self.auto_teach_counter = random.randint(300, 600)
+                else:
+                    if random.randint(0,1)==0:
+                        self.mouse.but1_pressed = True
+                        self.mouse.but2_pressed = False
+                        self.mouse.x = random.randint(0, self.width())
+                        self.mouse.y = random.randint(0, self.height())
+                    else:
+                        self.mouse.but1_pressed = False
+                        self.mouse.but2_pressed = False
+                        self.mouse.but3_pressed = True
+                        self.mouse.x = self.prim.x
+                        self.mouse.y = self.prim.y
+                    self.mouse.area_size = random.randint(40, 80)
+                    self.auto_teach_counter = 200 + random.randint(100,300)*self.mouse.but1_pressed
 
     def get_sensor_value(self, x, y):
         distance = math.sqrt((self.mouse.x - x) ** 2 + (self.mouse.y - y) ** 2)
@@ -140,6 +150,11 @@ class MainWindow(QtGui.QWidget):
         for sensor_pos, sensor_value in zip(self.prim.sensors_positions(), self.prim.sensor_values):
             qp.setBrush(brush_f(sensor_value))
             qp.drawEllipse(sensor_pos[0] - 3, sensor_pos[1] - 3, 6, 6)
+
+        qp.drawLine(self.prim.x,
+                    self.prim.y,
+                    self.prim.x + math.cos(self.prim.useless_angle)*self.prim.size,
+                    self.prim.y + math.sin(self.prim.useless_angle)*self.prim.size)
         # drawing mouse
         if self.mouse.pressed():
             self.mouse.draw(qp)
@@ -256,7 +271,7 @@ class Mouse(object):
         self.but2_brush = brush(180, 60, 80, alpha=100)
         self.but3_brush = brush(60, 80, 180, alpha=100)
         self._area_size = 10
-        self._influence_area_size = self._area_size * MainWindow.GREEN_AREA_RATIO
+        self._influence_area_size = 0
 
     @property
     def area_size(self):
@@ -265,7 +280,7 @@ class Mouse(object):
     @area_size.setter
     def area_size(self, value):
         self._area_size = value
-        self._influence_area_size = self._area_size * MainWindow.GREEN_AREA_RATIO
+        self._influence_area_size = 0
 
     @property
     def influence_area_size(self):

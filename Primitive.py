@@ -10,6 +10,7 @@ class Primitive():
     MAX_BRAIN_STIMULATION = 0.1
     BRAIN_STIMULATION_FILTER_THRESHOLD = 0.3
     RANDOM_VALUE_FOR_ANSWER = 0.1
+    TWO_PI = math.pi*2
 
     def __init__(self):
         self.x = 89
@@ -25,8 +26,9 @@ class Primitive():
         self.idle_time = 0
         self.random_plan = []
         self.first_state = True
+        self.useless_angle = 0
 
-        self.brain = NeuralNetwork([self.sensor_count * 3, 18, 3], random_value=self.RANDOM_VALUE_FOR_ANSWER)
+        self.brain = NeuralNetwork([self.sensor_count * 3, 24, 4], random_value=self.RANDOM_VALUE_FOR_ANSWER)
         # self.brain = NetworkTest.make_net(self.sensor_count)
 
     def sensors_positions(self):
@@ -40,9 +42,10 @@ class Primitive():
         self.sensor_values = zip(sensors_values[::3], sensors_values[1::3], sensors_values[2::3])
         answer = self.brain.calculate(sensors_values)
         if self.DEBUG:
-            print("answ={:.6f}, {:.6f}, {:.6f} inp={}".format(answer[0], answer[1], answer[2], self.sensor_values))
+            print("answ={:.6f}, {:.6f}, {:.6f}, {:.6f} inp={}".format(answer[0], answer[1], answer[2], answer[3], self.sensor_values))
         self.move(answer[0], answer[1])
         self.grow_up(answer[2])
+        self.useless_angle = (self.useless_angle + answer[3]) % Primitive.TWO_PI
 
     def change_state(self, influence_value):
         self.state += influence_value
