@@ -1,7 +1,8 @@
 __author__ = 'zshimanchik'
 import math
-
 from NeuralNetwork.NeuralNetwork import NeuralNetwork
+
+TWO_PI = math.pi * 2
 
 
 class Primitive():
@@ -14,6 +15,7 @@ class Primitive():
     def __init__(self):
         self.x = 89
         self.y = 120
+        self.angle = 0
         self.size = 30
         self.sensor_count = 16
         self.sensor_values = []
@@ -32,7 +34,7 @@ class Primitive():
     def sensors_positions(self):
         res = []
         for i in range(self.sensor_count):
-            angle = i * math.pi * 2 / self.sensor_count
+            angle = self.angle + i * math.pi * 2 / self.sensor_count
             res.append((math.cos(angle) * self.size + self.x, math.sin(angle) * self.size + self.y))
         return res
 
@@ -65,9 +67,10 @@ class Primitive():
                                  * min(max(Primitive.MIN_BRAIN_STIMULATION, abs_stimulation), Primitive.MAX_BRAIN_STIMULATION)
         self.brain.teach_considering_random(self.brain_stimulation)
 
-    def move(self, dx, dy):
-        self.x += dx
-        self.y += dy
+    def move(self, rotate_angle, length):
+        self.angle = (self.angle + rotate_angle * length * 0.3 ) % TWO_PI
+        self.x += math.cos(self.angle) * length
+        self.y += math.sin(self.angle) * length
 
     def grow_up(self, d_size):
         self.size += d_size

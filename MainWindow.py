@@ -45,7 +45,7 @@ class MainWindow(QtGui.QWidget):
         self.brain_stimulation_func = PlotFunction(self.width(), shifted=True)
         self.draw_plots = False
 
-        self.timer_interval = 300
+        self.timer_interval = 1
         self.timer = QtCore.QBasicTimer()
         self.timer.start(self.timer_interval, self)
         self.auto_teach = False
@@ -135,6 +135,10 @@ class MainWindow(QtGui.QWidget):
                        self.prim.y - self.prim.size,
                        self.prim.size * 2,
                        self.prim.size * 2)
+        qp.drawLine(self.prim.x,
+                    self.prim.y,
+                    self.prim.x + math.cos(self.prim.angle)*self.prim.size,
+                    self.prim.y + math.sin(self.prim.angle)*self.prim.size)
         # drawing sensors
         qp.setBrush(brush(0, 0, 0))
         for sensor_pos, sensor_value in zip(self.prim.sensors_positions(), self.prim.sensor_values):
