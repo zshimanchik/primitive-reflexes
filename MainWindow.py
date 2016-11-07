@@ -2,6 +2,7 @@ __author__ = 'zshimanchik'
 import sys
 import math
 import random
+from collections import deque
 
 from PyQt4.QtGui import QBrush, QColor
 from PyQt4 import QtGui, QtCore
@@ -40,9 +41,10 @@ class MainWindow(QtGui.QWidget):
         self.prim = primitive
         self.nnv_window = nnv_window
 
-        self.stimulation_func = PlotFunction(self.width(), shifted=True)
-        self.state_func = PlotFunction(self.width(), shifted=True)
-        self.brain_stimulation_func = PlotFunction(self.width(), shifted=True)
+        width = self.width()
+        self.stimulation_func = deque(maxlen=width)
+        self.state_func = deque(maxlen=width)
+        self.brain_stimulation_func = deque(maxlen=width)
         self.draw_plots = False
 
         self.timer_interval = 1
@@ -56,9 +58,9 @@ class MainWindow(QtGui.QWidget):
                             .format(self.prim.state, self.prim.stimulation, self.prim.brain_stimulation))
         self.update_primitive_position()
         if self.draw_plots:
-            self.state_func.add_value(self.prim.state)
-            self.stimulation_func.add_value(self.prim.stimulation)
-            self.brain_stimulation_func.add_value(self.prim.brain_stimulation)
+            self.state_func.append(self.prim.state)
+            self.stimulation_func.append(self.prim.stimulation)
+            self.brain_stimulation_func.append(self.prim.brain_stimulation)
 
         influence_value = self.get_influence_value()
         self.prim.change_state(influence_value)
@@ -246,9 +248,10 @@ class MainWindow(QtGui.QWidget):
         self.timer.start(self.timer_interval, self)
 
     def resizeEvent(self, event):
-        self.stimulation_func.set_size(self.width())
-        self.state_func.set_size(self.width())
-        self.brain_stimulation_func.set_size(self.width())
+        width = self.width()
+        self.stimulation_func = deque(self.stimulation_func, maxlen=width)
+        self.state_func = deque(self.state_func, maxlen=width)
+        self.brain_stimulation_func = deque(self.brain_stimulation_func, maxlen=width)
 
     def closeEvent(self, event):
         self.nnv_window.close()
@@ -296,31 +299,6 @@ class Mouse(object):
                        self.area_size * 2,
                        self.area_size * 2)
         qp.setBrush(old_brush)
-
-
-class PlotFunction():
-    def __init__(self, size, shifted=False):
-        self.size = size
-        self.values = [0] * self.size
-        self.last_value = 0
-        self.shifted = shifted
-
-    def set_size(self, new_size):
-        self.size = new_size
-        self.values = [0] * self.size
-        self.last_value = 0
-
-    def add_value(self, value):
-        self.last_value += 1
-        if self.last_value >= self.size:
-            self.last_value = 0
-        self.values[self.last_value] = value
-
-    def __getitem__(self, i):
-        return self.values[(i + (self.last_value + 1) * self.shifted) % self.size]
-
-    def __len__(self):
-        return self.size
 
 
 def main():
