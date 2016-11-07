@@ -3,6 +3,7 @@ import sys
 import math
 import random
 from collections import deque
+from itertools import izip_longest
 
 from PyQt4.QtGui import QBrush, QColor
 from PyQt4 import QtGui, QtCore
@@ -56,31 +57,41 @@ class MainWindow(QtGui.QWidget):
     def timerEvent(self, event):
         self.setWindowTitle("{:.4f} : {:.6f} : {:.6f}"
                             .format(self.prim.state, self.prim.stimulation, self.prim.brain_stimulation))
-        self.update_primitive_position()
         if self.draw_plots:
-            self.state_func.append(self.prim.state)
-            self.stimulation_func.append(self.prim.stimulation)
-            self.brain_stimulation_func.append(self.prim.brain_stimulation)
+            self._append_plot_info()
 
-        influence_value = self.get_influence_value()
-        self.prim.change_state(influence_value)
-        sensors_values = []
-        map(sensors_values.extend, (self.get_sensor_value(x, y) for x, y in self.prim.sensors_positions()))
-        self.prim.update(sensors_values)
+        self.update_world()
 
         self.repaint()
         self.nnv_window.repaint()
         if self.auto_teach:
-            self.auto_teach_counter -= 1
-            if self.auto_teach_counter <= 0:
-                self.auto_teach_counter = random.randint(500, 1000)
-                but = random.randint(0,2)
-                self.mouse.but1_pressed = but == 0
-                self.mouse.but2_pressed = but == 1
-                self.mouse.but3_pressed = but == 2
-                self.mouse.x = random.randint(0, self.width())
-                self.mouse.y = random.randint(0, self.height())
-                self.mouse.area_size = random.randint(10, 40)
+            self._update_auto_teach()
+
+    def _append_plot_info(self):
+        self.state_func.append(self.prim.state)
+        self.stimulation_func.append(self.prim.stimulation)
+        self.brain_stimulation_func.append(self.prim.brain_stimulation)
+
+    def update_world(self):
+        self.update_primitive_position()
+        sensors_values = []
+        map(sensors_values.extend, (self.get_sensor_value(x, y) for x, y in self.prim.sensors_positions()))
+        self.prim.sensor_values = sensors_values
+        influence_value = self.get_influence_value()
+        self.prim.change_state(influence_value)
+        self.prim.update(sensors_values)
+
+    def _update_auto_teach(self):
+        self.auto_teach_counter -= 1
+        if self.auto_teach_counter <= 0:
+            self.auto_teach_counter = random.randint(500, 1000)
+            but = random.randint(0, 0)
+            self.mouse.but1_pressed = but == 0
+            self.mouse.but2_pressed = but == 1
+            self.mouse.but3_pressed = but == 2
+            self.mouse.x = random.randint(0, self.width())
+            self.mouse.y = random.randint(0, self.height())
+            self.mouse.area_size = random.randint(100, 400)
 
     def get_sensor_value(self, x, y):
         if not self.mouse.pressed():
@@ -102,22 +113,24 @@ class MainWindow(QtGui.QWidget):
         return smell
 
     def get_influence_value(self):
-        val = 0
-        if self.mouse.pressed():
-            val = self.calc_intersect_value() * MainWindow.INTERSECT_VALUE_TO_INFLUENCE_VALUE_RATIO
-            if self.mouse.but2_pressed:
-                val *= -1
-        return val
-
-    def calc_intersect_value(self):
-        dist = math.sqrt((self.mouse.x - self.prim.x) ** 2 + (self.mouse.y - self.prim.y) ** 2)
-        intersect_length = max(0, self.mouse.influence_area_size + self.prim.size - dist)
-        intersect_length = min(intersect_length, self.mouse.influence_area_size * 2, self.prim.size * 2)
-        return (intersect_length ** 2) / 2
+        return sum(self.prim.sensor_values[1::3]) * 10
 
     def paintEvent(self, event):
         qp = QtGui.QPainter()
         qp.begin(self)
+
+        args = [iter(self.prim.sensor_values)] * 3
+        sensor_iter = izip_longest(*args, fillvalue=0)
+        qp.drawText(
+            QtCore.QRect(0, 0, 200, 150),
+            QtCore.Qt.AlignTop,
+            '\n'.join("{:.4f}, {:.4f}, {:.4f}".format(*x) for x in sensor_iter)
+        )
+        qp.drawText(
+            QtCore.QRect(200, 0, 100, 50),
+            QtCore.Qt.AlignTop,
+            '{:.6f}\n{:.6f}'.format(self.get_influence_value(), self.prim.stimulation)
+        )
 
         # drawing plots
         if self.draw_plots:
@@ -148,7 +161,8 @@ class MainWindow(QtGui.QWidget):
                     self.prim.y + math.sin(self.prim.angle)*self.prim.size)
         # drawing sensors
         qp.setBrush(brush(0, 0, 0))
-        for sensor_pos, sensor_value in zip(self.prim.sensors_positions(), self.prim.sensor_values):
+        for i, sensor_pos in enumerate(self.prim.sensors_positions()):
+            sensor_value = self.prim.sensor_values[i*3:(i+1)*3]
             qp.setBrush(brush_f(sensor_value))
             qp.drawEllipse(sensor_pos[0] - 3, sensor_pos[1] - 3, 6, 6)
         # drawing mouse
