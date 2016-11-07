@@ -81,18 +81,23 @@ class MainWindow(QtGui.QWidget):
                 self.mouse.area_size = random.randint(10, 40)
 
     def get_sensor_value(self, x, y):
+        if not self.mouse.pressed():
+            return MainWindow.BLACK
+
         distance = math.sqrt((self.mouse.x - x) ** 2 + (self.mouse.y - y) ** 2)
-        if self.mouse.pressed() and distance < self.mouse.area_size:
-            if self.mouse.but1_pressed:
-                return MainWindow.GREEN
-            elif self.mouse.but2_pressed:
-                return MainWindow.RED
-            elif self.mouse.but3_pressed:
-                if distance < self.mouse.influence_area_size:
-                    return MainWindow.GREEN
-                else:
-                    return MainWindow.BLUE
-        return MainWindow.BLACK
+        smell_strength = max(0, 1 - distance / self.mouse.area_size) ** 2
+
+        if self.mouse.but1_pressed:
+            smell = MainWindow.GREEN
+        elif self.mouse.but2_pressed:
+            smell = MainWindow.RED
+        elif self.mouse.but3_pressed:
+            smell = MainWindow.BLUE
+        else:
+            smell = MainWindow.BLACK
+
+        smell = [x*smell_strength for x in smell]
+        return smell
 
     def get_influence_value(self):
         val = 0
@@ -290,12 +295,6 @@ class Mouse(object):
                        self.y - self.area_size,
                        self.area_size * 2,
                        self.area_size * 2)
-        if self.but3_pressed:
-            qp.setBrush(self.but1_brush)
-            qp.drawEllipse(self.x - self.influence_area_size,
-                           self.y - self.influence_area_size,
-                           self.influence_area_size * 2,
-                           self.influence_area_size * 2)
         qp.setBrush(old_brush)
 
 

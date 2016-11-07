@@ -17,7 +17,7 @@ class Primitive():
         self.y = 120
         self.angle = 0
         self.size = 30
-        self.sensor_count = 16
+        self.sensor_count = 5
         self.sensor_values = []
         self.state = 0
         self.stimulation = 0
