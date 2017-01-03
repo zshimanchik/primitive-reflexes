@@ -27,19 +27,19 @@ class _AbstractNeuron():
 class Neuron(_AbstractNeuron):
     def __init__(self, synapse_count):
         _AbstractNeuron.__init__(self)
-        self.w = [random() * 0.3 - 0.15 for _ in range(synapse_count)]
-        self.w0 = random() * 0.3 - 0.15
+        self.w = [random() * 0.9 - 0.45 for _ in range(synapse_count)]
+        self.w0 = random() * 0.9 - 0.45
         self.dw = [0] * synapse_count
 
     def add_synapse(self, count):
-        self.w = self.w + [random() * 0.3 - 0.15 for _ in range(count)]
+        self.w = self.w + [random() * 0.9 - 0.45 for _ in range(count)]
         self.dw = self.dw + [0]*count
         
     def calculate(self, x):
         net = 0
         for i in range(len(x)):
             net += x[i] * self.w[i]
-        self.out = th(net - self.w0)
+        self.out = th(net)
         return self.out
 
     def commit_teach(self):

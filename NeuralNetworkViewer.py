@@ -59,16 +59,18 @@ class NeuralNetworkViewer(QtGui.QWidget):
                 set_color(qp, int((neuron.out+1)*255/2.0))
                 qp.drawChord(rect, -20*16, -140*16)
                 # draw w
-                w_angle = 180 * 16 / float(len(neuron.w))
-                for j in range(len(neuron.w)):
-                    set_color(qp, int((neuron.w[j]+1)*255/2.0))
-                    qp.drawPie(rect, j*w_angle, w_angle)
+                if neuron.w:
+                    w_angle = 180 * 16 / float(len(neuron.w))
+                    for j in range(len(neuron.w)):
+                        set_color(qp, int((neuron.w[j]+1)*255/2.0))
+                        qp.drawPie(rect, j*w_angle, w_angle)
             else:
+                values = layer.get_output_values()
                 # draw out
                 set_color(qp, int((neuron.out+1)*255/2.0))
                 qp.drawPie(rect, 0, -180*16)
                 # draw input
-                set_color(qp, int((layer.input_values[i]+1) * 255.0 / 2.0))
+                set_color(qp, int((values[i]+1) * 255.0 / 2.0))
                 qp.drawPie(rect, 0, 180*16)
 
 

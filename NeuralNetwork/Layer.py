@@ -1,4 +1,4 @@
-from Neuron import Neuron, InputNeuron, RandomNeuron
+from Neuron import Neuron, InputNeuron, RandomNeuron, BiasNeuron
 
 
 class _AbstractLayer():
@@ -44,15 +44,17 @@ class InputLayer(_AbstractLayer):
     """
     Input layer with connection ONE to ONE. using just for providing values to the next layers
     """
-    def __init__(self, size):
+    def __init__(self, size, add_bias=True):
         _AbstractLayer.__init__(self)
         self.neurons = [InputNeuron() for _ in range(size)]
         self.input_values = [0] * len(self)
+        if add_bias:
+            self.neurons.append(BiasNeuron())
 
     def calculate(self, x=None):
         if x is not None:
             self.input_values = x
-        return [self[i].calculate(self.input_values[i]) for i in range(len(self))]
+        return [self[i].calculate(self.input_values[i]) for i in range(len(x))]
 
 
 class RandomLayer(InputLayer):
@@ -74,10 +76,12 @@ class Layer(_AbstractLayer):
     """
     Layer with connection ALL_TO_ALL
     """
-    def __init__(self, size, input):
+    def __init__(self, size, input, add_bias=True):
         _AbstractLayer.__init__(self)
         self.input = input
         self.neurons = [Neuron(len(self.input)) for _ in range(size)]
+        if add_bias:
+            self.neurons.append(BiasNeuron())
 
     def add_input(self, input):
         self.input = self.input + input

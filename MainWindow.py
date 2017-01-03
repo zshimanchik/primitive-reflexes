@@ -10,6 +10,7 @@ from PyQt4 import QtGui, QtCore
 
 from Primitive import Primitive
 from NeuralNetworkViewer import NeuralNetworkViewer
+from neural_network_viewer import NeuralNetworkViewer as NNV2
 
 
 def brush(r, g, b, alpha=255):
@@ -41,6 +42,7 @@ class MainWindow(QtGui.QWidget):
         self.mouse = Mouse()
         self.prim = primitive
         self.nnv_window = nnv_window
+        self.nnv = None
 
         width = self.width()
         self.stimulation_func = deque(maxlen=width)
@@ -64,6 +66,8 @@ class MainWindow(QtGui.QWidget):
 
         self.repaint()
         self.nnv_window.repaint()
+        if self.nnv:
+            self.nnv.repaint()
         if self.auto_teach:
             self._update_auto_teach()
 
@@ -113,7 +117,8 @@ class MainWindow(QtGui.QWidget):
         return smell
 
     def get_influence_value(self):
-        return sum(self.prim.sensor_values[1::3]) * 10
+        # return sum(self.prim.sensor_values[1::3]) * 10
+        return self.prim.sensor_values[1] * 10
 
     def paintEvent(self, event):
         qp = QtGui.QPainter()
@@ -255,6 +260,8 @@ class MainWindow(QtGui.QWidget):
             Primitive.DEBUG = not Primitive.DEBUG
         elif event.key() == 78:  # n
             self.nnv_window.setVisible(not self.nnv_window.isVisible())
+            self.nnv = NeuralNetworkViewer(self.prim.brain)
+            self.nnv.setVisible(True)
 
     def set_timer_interval(self, interval):
         self.timer_interval = max(1, interval)
@@ -269,6 +276,7 @@ class MainWindow(QtGui.QWidget):
 
     def closeEvent(self, event):
         self.nnv_window.close()
+        self.nnv.close()
 
 
 class Mouse(object):
@@ -319,6 +327,7 @@ def main():
     application = QtGui.QApplication(sys.argv)
     primitive = Primitive()
     nnv_window = NeuralNetworkViewer(primitive.brain)
+    nnv_window = NNV2(network=primitive.brain)
     window = MainWindow(primitive, nnv_window)
     window.show()
     # nnv_window.show()

@@ -12,7 +12,7 @@ class NeuralNetwork:
         self.middle_layer = Layer(shape[1], self.input_layer.neurons)
         self.input_layer.listeners.append(self.middle_layer)
 
-        self.output_layer = Layer(shape[2], self.middle_layer.neurons)
+        self.output_layer = Layer(shape[2], self.middle_layer.neurons, add_bias=False)
         self.middle_layer.listeners.append(self.output_layer)
 
         self.random_layer = RandomLayer(shape[2], self.output_layer.neurons, random_value)
