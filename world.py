@@ -15,7 +15,6 @@ class World:
         self.height = height
         self.mouse = mouse
 
-
     def update(self):
         self.update_primitive_position()
         sensors_values = [v for x, y in self.prim.sensors_positions() for v in self.get_sensor_value(x, y)]
@@ -55,5 +54,6 @@ class World:
         return smell
 
     def get_influence_value(self):
-        return sum(self.prim.sensor_values[1::3]) * 10
+        return self.get_sensor_value(self.prim.x, self.prim.y)[1] * 10
+        # return sum(self.prim.sensor_values[1::3]) * 10
         # return self.prim.sensor_values[1] * 10
