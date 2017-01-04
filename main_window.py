@@ -17,13 +17,13 @@ from neural_network_viewer import NeuralNetworkViewer as NNV2
 class MainWindow(QtGui.QWidget):
     PLOT_ZOOM = 800
 
-    def __init__(self, primitive, nnv_window):
+    def __init__(self):
         super(MainWindow, self).__init__()
+        self._init_key_handlers()
         self.setWindowTitle("Main Windows")
         self.resize(400, 400)
         self.mouse = Mouse()
         self.world = World(self.width(), self.height(), self.mouse)
-        self.nnv_window = nnv_window
         self.nnv = None
 
         width = self.width()
@@ -37,6 +37,9 @@ class MainWindow(QtGui.QWidget):
         self.timer.start(self.timer_interval, self)
         self.auto_teach = False
         self.auto_teach_counter = 0
+
+        # self.nnv_window = NeuralNetworkViewer(self.world.prim.brain)
+        self.nnv_window = NNV2(network=self.world.prim.brain)
 
     def timerEvent(self, event):
         self.setWindowTitle("{:.4f} : {:.6f} : {:.6f}"
@@ -172,45 +175,6 @@ class MainWindow(QtGui.QWidget):
             if self.mouse.pressed():
                 self.repaint()
 
-    def keyPressEvent(self, event):
-        if Primitive.DEBUG:
-            print("key={} ".format(event.key()))
-        if event.key() == 32:  # space
-            if self.timer.isActive():
-                self.timer.stop()
-            else:
-                self.timer.start(self.timer_interval, self)
-        elif event.key() == 67:  # c
-            self.need_to_draw_plots = not self.need_to_draw_plots
-        elif event.key() == 43:  # -
-            if self.timer_interval < 20:
-                self.set_timer_interval(self.timer_interval - 1)
-            else:
-                self.set_timer_interval(self.timer_interval - 20)
-        elif event.key() == 45:  # +
-            if self.timer_interval < 20:
-                self.set_timer_interval(self.timer_interval + 1)
-            else:
-                self.set_timer_interval(self.timer_interval + 20)
-        elif event.key() == 16777219:  # backspace
-            self.set_timer_interval(1)
-        elif event.key() == 88:  # x
-            self.world.prim.brain.context_layer.clean()
-            if Primitive.DEBUG:
-                print("context cleared")
-        elif event.key() == 70:  # f
-            self.mouse.fixed = not self.mouse.fixed
-        elif event.key() == 65:  # a
-            self.auto_teach = not self.auto_teach
-            if Primitive.DEBUG:
-                print("auto teach = {}".format(self.auto_teach))
-        elif event.key() == 68: # d
-            Primitive.DEBUG = not Primitive.DEBUG
-        elif event.key() == 78:  # n
-            self.nnv_window.setVisible(not self.nnv_window.isVisible())
-            self.nnv = NeuralNetworkViewer(self.world.prim.brain)
-            self.nnv.setVisible(True)
-
     def set_timer_interval(self, interval):
         self.timer_interval = max(1, interval)
         self.timer.stop()
@@ -227,6 +191,68 @@ class MainWindow(QtGui.QWidget):
     def closeEvent(self, event):
         self.nnv_window.close()
         self.nnv.close()
+
+    def _init_key_handlers(self):
+        self.KEY_HANDLERS = {
+            QtCore.Qt.Key_Space: self._start_stop,
+            QtCore.Qt.Key_C: self._switch_need_to_draw_plots,
+            QtCore.Qt.Key_Minus: self._decrease_timer_interval,
+            QtCore.Qt.Key_Plus: self._increase_timer_interval,
+            QtCore.Qt.Key_Backspace: self._set_min_timer_interval,
+            QtCore.Qt.Key_F: self._switch_mouse_fixed,
+            QtCore.Qt.Key_A: self._switch_auto_teach,
+            QtCore.Qt.Key_D: self._switch_debug,
+            QtCore.Qt.Key_N: self._show_nnv_windows,
+        }
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if Primitive.DEBUG:
+            print("key={} ".format(key))
+        if key in self.KEY_HANDLERS:
+            self.KEY_HANDLERS[key]()
+
+    #===== KEY HANDLERS
+
+    def _start_stop(self):
+        if self.timer.isActive():
+            self.timer.stop()
+        else:
+            self.timer.start(self.timer_interval, self)
+
+    def _switch_need_to_draw_plots(self):
+        self.need_to_draw_plots = not self.need_to_draw_plots
+
+    def _decrease_timer_interval(self):
+        if self.timer_interval < 20:
+            self.set_timer_interval(self.timer_interval - 1)
+        else:
+            self.set_timer_interval(self.timer_interval - 20)
+
+    def _increase_timer_interval(self):
+        if self.timer_interval < 20:
+            self.set_timer_interval(self.timer_interval + 1)
+        else:
+            self.set_timer_interval(self.timer_interval + 20)
+
+    def _set_min_timer_interval(self):
+        self.set_timer_interval(1)
+
+    def _switch_mouse_fixed(self):
+        self.mouse.fixed = not self.mouse.fixed
+
+    def _switch_debug(self):
+        Primitive.DEBUG = not Primitive.DEBUG
+
+    def _switch_auto_teach(self):
+        self.auto_teach = not self.auto_teach
+        if Primitive.DEBUG:
+            print("auto teach = {}".format(self.auto_teach))
+
+    def _show_nnv_windows(self):
+        self.nnv_window.setVisible(not self.nnv_window.isVisible())
+        self.nnv = NeuralNetworkViewer(self.world.prim.brain)
+        self.nnv.setVisible(True)
 
 
 class Mouse(object):
@@ -289,12 +315,8 @@ def brush_f(color):
 
 def main():
     application = QtGui.QApplication(sys.argv)
-    primitive = Primitive()
-    nnv_window = NeuralNetworkViewer(primitive.brain)
-    nnv_window = NNV2(network=primitive.brain)
-    window = MainWindow(primitive, nnv_window)
+    window = MainWindow()
     window.show()
-    # nnv_window.show()
     sys.exit(application.exec_())
 
 
