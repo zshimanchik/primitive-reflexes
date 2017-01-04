@@ -3,7 +3,7 @@ import sys
 import math
 import random
 from collections import deque
-from itertools import izip_longest
+from itertools import zip_longest
 
 from PyQt4.QtGui import QBrush, QColor
 from PyQt4 import QtGui, QtCore
@@ -78,8 +78,7 @@ class MainWindow(QtGui.QWidget):
 
     def update_world(self):
         self.update_primitive_position()
-        sensors_values = []
-        map(sensors_values.extend, (self.get_sensor_value(x, y) for x, y in self.prim.sensors_positions()))
+        sensors_values = [v for x, y in self.prim.sensors_positions() for v in self.get_sensor_value(x, y)]
         self.prim.sensor_values = sensors_values
         influence_value = self.get_influence_value()
         self.prim.change_state(influence_value)
@@ -125,7 +124,7 @@ class MainWindow(QtGui.QWidget):
         qp.begin(self)
 
         args = [iter(self.prim.sensor_values)] * 3
-        sensor_iter = izip_longest(*args, fillvalue=0)
+        sensor_iter = zip_longest(*args, fillvalue=0)
         qp.drawText(
             QtCore.QRect(0, 0, 200, 150),
             QtCore.Qt.AlignTop,

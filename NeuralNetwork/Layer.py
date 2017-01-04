@@ -1,4 +1,4 @@
-from Neuron import Neuron, InputNeuron, RandomNeuron, BiasNeuron
+from .Neuron import Neuron, InputNeuron, RandomNeuron, BiasNeuron
 
 
 class _AbstractLayer():

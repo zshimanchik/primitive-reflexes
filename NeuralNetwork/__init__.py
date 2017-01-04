@@ -1,5 +1,5 @@
 __author__ = 'arch'
 
-import NeuralNetwork
-import Layer
-import Neuron
+from . import NeuralNetwork
+from . import Layer
+from . import Neuron

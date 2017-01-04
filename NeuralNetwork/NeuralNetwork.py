@@ -1,4 +1,4 @@
-from Layer import Layer, InputLayer, RandomLayer
+from .Layer import Layer, InputLayer, RandomLayer
 
 
 class NeuralNetwork:
