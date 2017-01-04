@@ -8,39 +8,21 @@ from itertools import zip_longest
 from PyQt4.QtGui import QBrush, QColor
 from PyQt4 import QtGui, QtCore
 
-from Primitive import Primitive
+from world import World, BLUE, GREEN
+from primitive import Primitive
 from NeuralNetworkViewer import NeuralNetworkViewer
 from neural_network_viewer import NeuralNetworkViewer as NNV2
 
 
-def brush(r, g, b, alpha=255):
-    return QBrush(QColor(r, g, b, alpha))
-
-
-def brush_f(color):
-    if MainWindow.BLUE == color:
-        return QBrush(QColor(66,170,255))
-    elif MainWindow.GREEN == color:
-        return QBrush(QColor(0,255,0))
-    return QBrush(QColor(color[0]*255, color[1]*255, color[2]*255))
-
-
 class MainWindow(QtGui.QWidget):
-    INTERSECT_VALUE_TO_INFLUENCE_VALUE_RATIO = 1 / 200.0
     PLOT_ZOOM = 800
-
-    GREEN_AREA_RATIO = 0.5
-    BLACK = (0.0, 0.0, 0.0)
-    RED = (1.0, 0.0, 0.0)
-    GREEN = (0.0, 1.0, 0.0)
-    BLUE = (0.0, 0.0, 1.0)
 
     def __init__(self, primitive, nnv_window):
         super(MainWindow, self).__init__()
         self.setWindowTitle("Main Windows")
         self.resize(400, 400)
         self.mouse = Mouse()
-        self.prim = primitive
+        self.world = World(self.width(), self.height(), self.mouse)
         self.nnv_window = nnv_window
         self.nnv = None
 
@@ -48,7 +30,7 @@ class MainWindow(QtGui.QWidget):
         self.stimulation_func = deque(maxlen=width)
         self.state_func = deque(maxlen=width)
         self.brain_stimulation_func = deque(maxlen=width)
-        self.draw_plots = False
+        self.need_to_draw_plots = False
 
         self.timer_interval = 1
         self.timer = QtCore.QBasicTimer()
@@ -58,11 +40,11 @@ class MainWindow(QtGui.QWidget):
 
     def timerEvent(self, event):
         self.setWindowTitle("{:.4f} : {:.6f} : {:.6f}"
-                            .format(self.prim.state, self.prim.stimulation, self.prim.brain_stimulation))
-        if self.draw_plots:
+                            .format(self.world.prim.state, self.world.prim.stimulation, self.world.prim.brain_stimulation))
+        if self.need_to_draw_plots:
             self._append_plot_info()
 
-        self.update_world()
+        self.world.update()
 
         self.repaint()
         self.nnv_window.repaint()
@@ -72,17 +54,9 @@ class MainWindow(QtGui.QWidget):
             self._update_auto_teach()
 
     def _append_plot_info(self):
-        self.state_func.append(self.prim.state)
-        self.stimulation_func.append(self.prim.stimulation)
-        self.brain_stimulation_func.append(self.prim.brain_stimulation)
-
-    def update_world(self):
-        self.update_primitive_position()
-        sensors_values = [v for x, y in self.prim.sensors_positions() for v in self.get_sensor_value(x, y)]
-        self.prim.sensor_values = sensors_values
-        influence_value = self.get_influence_value()
-        self.prim.change_state(influence_value)
-        self.prim.update(sensors_values)
+        self.state_func.append(self.world.prim.state)
+        self.stimulation_func.append(self.world.prim.stimulation)
+        self.brain_stimulation_func.append(self.world.prim.brain_stimulation)
 
     def _update_auto_teach(self):
         self.auto_teach_counter -= 1
@@ -96,95 +70,70 @@ class MainWindow(QtGui.QWidget):
             self.mouse.y = random.randint(0, self.height())
             self.mouse.area_size = random.randint(100, 400)
 
-    def get_sensor_value(self, x, y):
-        if not self.mouse.pressed():
-            return MainWindow.BLACK
-
-        distance = math.sqrt((self.mouse.x - x) ** 2 + (self.mouse.y - y) ** 2)
-        smell_strength = max(0, 1 - distance / self.mouse.area_size) ** 2
-
-        if self.mouse.but1_pressed:
-            smell = MainWindow.GREEN
-        elif self.mouse.but2_pressed:
-            smell = MainWindow.RED
-        elif self.mouse.but3_pressed:
-            smell = MainWindow.BLUE
-        else:
-            smell = MainWindow.BLACK
-
-        smell = [x*smell_strength for x in smell]
-        return smell
-
-    def get_influence_value(self):
-        # return sum(self.prim.sensor_values[1::3]) * 10
-        return self.prim.sensor_values[1] * 10
-
     def paintEvent(self, event):
-        qp = QtGui.QPainter()
-        qp.begin(self)
+        painter = QtGui.QPainter()
+        painter.begin(self)
 
-        args = [iter(self.prim.sensor_values)] * 3
+        self._draw_debug_text(painter)
+
+        if self.need_to_draw_plots:
+            self._draw_plots(painter)
+
+        self._draw_primitive(painter)
+        self._draw_sensors(painter)
+
+        if self.mouse.pressed():
+            self.mouse.draw(painter)
+
+        painter.end()
+
+    def _draw_debug_text(self, painter):
+        args = [iter(self.world.prim.sensor_values)] * 3
         sensor_iter = zip_longest(*args, fillvalue=0)
-        qp.drawText(
+        painter.drawText(
             QtCore.QRect(0, 0, 200, 150),
             QtCore.Qt.AlignTop,
             '\n'.join("{:.4f}, {:.4f}, {:.4f}".format(*x) for x in sensor_iter)
         )
-        qp.drawText(
+        painter.drawText(
             QtCore.QRect(200, 0, 100, 50),
             QtCore.Qt.AlignTop,
-            '{:.6f}\n{:.6f}'.format(self.get_influence_value(), self.prim.stimulation)
+            '{:.6f}\n{:.6f}'.format(self.world.get_influence_value(), self.world.prim.stimulation)
         )
 
-        # drawing plots
-        if self.draw_plots:
-            qp.setPen(QtCore.Qt.gray)
-            qp.drawLine(0, 200, len(self.stimulation_func), 200)
-            qp.setPen(QtCore.Qt.darkCyan)
-            for i in range(len(self.state_func) - 1):
-                qp.drawLine(i, -self.state_func[i] * 70 + 200, i + 1, -self.state_func[i + 1] * 70 + 200)
-            qp.setPen(QtCore.Qt.red)
-            for i in range(len(self.stimulation_func) - 1):
-                qp.drawLine(i, -self.stimulation_func[i] * MainWindow.PLOT_ZOOM + 200,
-                            i + 1, -self.stimulation_func[i + 1] * MainWindow.PLOT_ZOOM + 200)
-            qp.setPen(QtCore.Qt.darkBlue)
-            for i in range(len(self.brain_stimulation_func) - 1):
-                qp.drawLine(i, -self.brain_stimulation_func[i] * MainWindow.PLOT_ZOOM + 200,
-                            i + 1, -self.brain_stimulation_func[i + 1] * MainWindow.PLOT_ZOOM + 200)
+    def _draw_plots(self, painter):
+        painter.setPen(QtCore.Qt.gray)
+        painter.drawLine(0, 200, len(self.stimulation_func), 200)
+        painter.setPen(QtCore.Qt.darkCyan)
+        for i in range(len(self.state_func) - 1):
+            painter.drawLine(i, -self.state_func[i] * 70 + 200, i + 1, -self.state_func[i + 1] * 70 + 200)
+        painter.setPen(QtCore.Qt.red)
+        for i in range(len(self.stimulation_func) - 1):
+            painter.drawLine(i, -self.stimulation_func[i] * self.PLOT_ZOOM + 200,
+                             i + 1, -self.stimulation_func[i + 1] * self.PLOT_ZOOM + 200)
+        painter.setPen(QtCore.Qt.darkBlue)
+        for i in range(len(self.brain_stimulation_func) - 1):
+            painter.drawLine(i, -self.brain_stimulation_func[i] * self.PLOT_ZOOM + 200,
+                             i + 1, -self.brain_stimulation_func[i + 1] * self.PLOT_ZOOM + 200)
 
-        # drawing primitive
-        qp.setPen(QtCore.Qt.black)
-        qp.setBrush(brush(170, 170, 170))
-        qp.drawEllipse(self.prim.x - self.prim.size,
-                       self.prim.y - self.prim.size,
-                       self.prim.size * 2,
-                       self.prim.size * 2)
-        qp.drawLine(self.prim.x,
-                    self.prim.y,
-                    self.prim.x + math.cos(self.prim.angle)*self.prim.size,
-                    self.prim.y + math.sin(self.prim.angle)*self.prim.size)
-        # drawing sensors
-        qp.setBrush(brush(0, 0, 0))
-        for i, sensor_pos in enumerate(self.prim.sensors_positions()):
-            sensor_value = self.prim.sensor_values[i*3:(i+1)*3]
-            qp.setBrush(brush_f(sensor_value))
-            qp.drawEllipse(sensor_pos[0] - 3, sensor_pos[1] - 3, 6, 6)
-        # drawing mouse
-        if self.mouse.pressed():
-            self.mouse.draw(qp)
+    def _draw_primitive(self, painter):
+        painter.setPen(QtCore.Qt.black)
+        painter.setBrush(brush(170, 170, 170))
+        painter.drawEllipse(self.world.prim.x - self.world.prim.size,
+                            self.world.prim.y - self.world.prim.size,
+                            self.world.prim.size * 2,
+                            self.world.prim.size * 2)
+        painter.drawLine(self.world.prim.x,
+                         self.world.prim.y,
+                         self.world.prim.x + math.cos(self.world.prim.angle) * self.world.prim.size,
+                         self.world.prim.y + math.sin(self.world.prim.angle) * self.world.prim.size)
 
-        qp.end()
-
-    def update_primitive_position(self):
-        if self.prim.x < 0:
-            self.prim.x = self.width() - 10
-        if self.prim.x > self.width():
-            self.prim.x = 10
-
-        if self.prim.y < 0:
-            self.prim.y = self.height() - 10
-        if self.prim.y > self.height():
-            self.prim.y = 10
+    def _draw_sensors(self, painter):
+        painter.setBrush(brush(0, 0, 0))
+        for i, sensor_pos in enumerate(self.world.prim.sensors_positions()):
+            sensor_value = self.world.prim.sensor_values[i*3:(i+1)*3]
+            painter.setBrush(brush_f(sensor_value))
+            painter.drawEllipse(sensor_pos[0] - 3, sensor_pos[1] - 3, 6, 6)
 
     def mousePressEvent(self, event):
         self.mouse.fixed = False
@@ -232,7 +181,7 @@ class MainWindow(QtGui.QWidget):
             else:
                 self.timer.start(self.timer_interval, self)
         elif event.key() == 67:  # c
-            self.draw_plots = not self.draw_plots
+            self.need_to_draw_plots = not self.need_to_draw_plots
         elif event.key() == 43:  # -
             if self.timer_interval < 20:
                 self.set_timer_interval(self.timer_interval - 1)
@@ -246,7 +195,7 @@ class MainWindow(QtGui.QWidget):
         elif event.key() == 16777219:  # backspace
             self.set_timer_interval(1)
         elif event.key() == 88:  # x
-            self.prim.brain.context_layer.clean()
+            self.world.prim.brain.context_layer.clean()
             if Primitive.DEBUG:
                 print("context cleared")
         elif event.key() == 70:  # f
@@ -259,7 +208,7 @@ class MainWindow(QtGui.QWidget):
             Primitive.DEBUG = not Primitive.DEBUG
         elif event.key() == 78:  # n
             self.nnv_window.setVisible(not self.nnv_window.isVisible())
-            self.nnv = NeuralNetworkViewer(self.prim.brain)
+            self.nnv = NeuralNetworkViewer(self.world.prim.brain)
             self.nnv.setVisible(True)
 
     def set_timer_interval(self, interval):
@@ -269,6 +218,8 @@ class MainWindow(QtGui.QWidget):
 
     def resizeEvent(self, event):
         width = self.width()
+        self.world.width = width
+        self.world.height = self.height()
         self.stimulation_func = deque(self.stimulation_func, maxlen=width)
         self.state_func = deque(self.state_func, maxlen=width)
         self.brain_stimulation_func = deque(self.brain_stimulation_func, maxlen=width)
@@ -279,6 +230,8 @@ class MainWindow(QtGui.QWidget):
 
 
 class Mouse(object):
+    GREEN_AREA_RATIO = 0.5
+
     def __init__(self):
         self.x, self.y = 0, 0
         self.fixed = False
@@ -289,7 +242,7 @@ class Mouse(object):
         self.but2_brush = brush(180, 60, 80, alpha=100)
         self.but3_brush = brush(60, 80, 180, alpha=100)
         self._area_size = 10
-        self._influence_area_size = self._area_size * MainWindow.GREEN_AREA_RATIO
+        self._influence_area_size = self._area_size * self.GREEN_AREA_RATIO
 
     @property
     def area_size(self):
@@ -298,7 +251,7 @@ class Mouse(object):
     @area_size.setter
     def area_size(self, value):
         self._area_size = value
-        self._influence_area_size = self._area_size * MainWindow.GREEN_AREA_RATIO
+        self._influence_area_size = self._area_size * self.GREEN_AREA_RATIO
 
     @property
     def influence_area_size(self):
@@ -320,6 +273,18 @@ class Mouse(object):
                        self.area_size * 2,
                        self.area_size * 2)
         qp.setBrush(old_brush)
+
+
+def brush(r, g, b, alpha=255):
+    return QBrush(QColor(r, g, b, alpha))
+
+
+def brush_f(color):
+    if BLUE == color:
+        return QBrush(QColor(66,170,255))
+    elif GREEN == color:
+        return QBrush(QColor(0,255,0))
+    return QBrush(QColor(color[0]*255, color[1]*255, color[2]*255))
 
 
 def main():
