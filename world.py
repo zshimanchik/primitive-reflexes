@@ -2,10 +2,10 @@ import math
 
 from primitive import Primitive
 
-BLACK = (0.0, 0.0, 0.0)
-RED = (1.0, 0.0, 0.0)
-GREEN = (0.0, 1.0, 0.0)
-BLUE = (0.0, 0.0, 1.0)
+BLACK = (0.0, )
+RED = (0.0, )
+GREEN = (1.0, )
+BLUE = (0.0, )
 
 
 class World:
@@ -55,6 +55,6 @@ class World:
         return smell
 
     def get_influence_value(self, prim):
-        return self.get_sensor_value(prim.x, prim.y)[1] * 10
+        return self.get_sensor_value(prim.x, prim.y)[0] * 10
         # return sum(self.prim.sensor_values[1::3]) * 10
         # return self.prim.sensor_values[1] * 10

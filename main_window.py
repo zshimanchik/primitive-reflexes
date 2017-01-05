@@ -87,12 +87,13 @@ class MainWindow(QtGui.QWidget):
         painter.end()
 
     def _draw_debug_text(self, painter):
-        args = [iter(self.world.prim.sensor_values)] * 3
+        args = [iter(self.world.prim.sensor_values)] * self.world.prim.SENSOR_DIMENSION
         sensor_iter = zip_longest(*args, fillvalue=0)
+        sensor_format_str = ', '.join(["{:.4f}"] * self.world.prim.SENSOR_DIMENSION)
         painter.drawText(
             QtCore.QRect(0, 0, 200, 150),
             QtCore.Qt.AlignTop,
-            '\n'.join("{:.4f}, {:.4f}, {:.4f}".format(*x) for x in sensor_iter)
+            '\n'.join(sensor_format_str.format(*x) for x in sensor_iter)
         )
         painter.drawText(
             QtCore.QRect(200, 0, 200, 100),
@@ -149,9 +150,9 @@ class MainWindow(QtGui.QWidget):
 
     def _draw_sensors(self, painter):
         painter.setBrush(brush(0, 0, 0))
-        for i, sensor_pos in enumerate(self.world.prim.sensors_positions()):
-            sensor_value = self.world.prim.sensor_values[i*3:(i+1)*3]
-            painter.setBrush(brush_f(sensor_value))
+        zip_items = [iter(self.world.prim.sensor_values)] * self.world.prim.SENSOR_DIMENSION
+        for sensor_pos, sensor_value in zip(self.world.prim.sensors_positions(), zip_longest(*zip_items)):
+            painter.setBrush(brush_for_sensor_value(sensor_value))
             painter.drawEllipse(sensor_pos[0] - 3, sensor_pos[1] - 3, 6, 6)
 
     def mousePressEvent(self, event):
@@ -325,12 +326,8 @@ def brush(r, g, b, alpha=255):
     return QBrush(QColor(r, g, b, alpha))
 
 
-def brush_f(color):
-    if BLUE == color:
-        return QBrush(QColor(66,170,255))
-    elif GREEN == color:
-        return QBrush(QColor(0,255,0))
-    return QBrush(QColor(color[0]*255, color[1]*255, color[2]*255))
+def brush_for_sensor_value(color):
+    return QBrush(QColor(0, color[0]*255, 0))
 
 
 def main():

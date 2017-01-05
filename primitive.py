@@ -13,6 +13,8 @@ class Primitive():
     BRAIN_STIMULATION_FILTER_THRESHOLD = 0.3
     RANDOM_VALUE_FOR_ANSWER = 0.1
 
+    SENSOR_DIMENSION = 1
+
     def __init__(self):
         self.x = 89
         self.y = 120
@@ -30,8 +32,8 @@ class Primitive():
 
         self.idle_time = 0
         self.plan = deque()
-        self.brain = NeuralNetwork([self.sensor_count * 3, 2, 2], random_value=self.RANDOM_VALUE_FOR_ANSWER)
-        self.brain.calculate([0]*self.sensor_count*3)
+        self.brain = NeuralNetwork([self.sensor_count * self.SENSOR_DIMENSION, 2, 2], random_value=self.RANDOM_VALUE_FOR_ANSWER)
+        self.brain.calculate([0] * self.sensor_count * self.SENSOR_DIMENSION)
 
     def sensors_positions(self):
         res = []
