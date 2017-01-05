@@ -15,8 +15,6 @@ from neural_network_viewer import NeuralNetworkViewer as NNV2
 
 
 class MainWindow(QtGui.QWidget):
-    PLOT_ZOOM = 800
-
     def __init__(self):
         super(MainWindow, self).__init__()
         self._init_key_handlers()
@@ -27,9 +25,9 @@ class MainWindow(QtGui.QWidget):
         self.nnv = None
 
         width = self.width()
-        self.stimulation_func = deque(maxlen=width)
-        self.state_func = deque(maxlen=width)
-        self.brain_stimulation_func = deque(maxlen=width)
+        self.stimulation_plot = deque(maxlen=width)
+        self.confidence_plot = deque(maxlen=width)
+        self.brain_stimulation_plot = deque(maxlen=width)
         self.need_to_draw_plots = False
 
         self.timer_interval = 1
@@ -55,9 +53,9 @@ class MainWindow(QtGui.QWidget):
             self._update_auto_teach()
 
     def _append_plot_info(self):
-        self.state_func.append(self.world.prim.state)
-        self.stimulation_func.append(self.world.prim.stimulation)
-        self.brain_stimulation_func.append(self.world.prim.brain_stimulation)
+        self.confidence_plot.append(self.world.prim.confidence)
+        self.stimulation_plot.append(self.world.prim.stimulation)
+        self.brain_stimulation_plot.append(self.world.prim.brain_stimulation)
 
     def _update_auto_teach(self):
         self.auto_teach_counter -= 1
@@ -108,19 +106,33 @@ class MainWindow(QtGui.QWidget):
         )
 
     def _draw_plots(self, painter):
+        plot_rect = self.rect()
+
+        zero_line = plot_rect.center().y()
         painter.setPen(QtCore.Qt.gray)
-        painter.drawLine(0, 200, len(self.stimulation_func), 200)
-        painter.setPen(QtCore.Qt.darkCyan)
-        for i in range(len(self.state_func) - 1):
-            painter.drawLine(i, -self.state_func[i] * 70 + 200, i + 1, -self.state_func[i + 1] * 70 + 200)
+        painter.drawLine(0, zero_line, self.width(), zero_line)
+
         painter.setPen(QtCore.Qt.red)
-        for i in range(len(self.stimulation_func) - 1):
-            painter.drawLine(i, -self.stimulation_func[i] * self.PLOT_ZOOM + 200,
-                             i + 1, -self.stimulation_func[i + 1] * self.PLOT_ZOOM + 200)
+        self._draw_plot(painter, self.stimulation_plot, plot_rect, 0.25, -0.25)
         painter.setPen(QtCore.Qt.darkBlue)
-        for i in range(len(self.brain_stimulation_func) - 1):
-            painter.drawLine(i, -self.brain_stimulation_func[i] * self.PLOT_ZOOM + 200,
-                             i + 1, -self.brain_stimulation_func[i + 1] * self.PLOT_ZOOM + 200)
+        self._draw_plot(painter, self.brain_stimulation_plot, plot_rect, 0.25, -0.25)
+        painter.setPen(QtCore.Qt.darkGreen)
+        self._draw_plot(painter, self.confidence_plot, plot_rect, 1, -1)
+
+    def _draw_plot(self, painter, plot, rect, max_value, min_value=0.0):
+        if not plot:
+            return
+
+        scale = rect.height() / (max_value - min_value)
+
+        def transform(y):
+            return -(y - min_value) * scale + rect.bottom()
+
+        plot_iter = iter(plot)
+        prev = next(plot_iter)
+        for i, cur in enumerate(plot_iter):
+            painter.drawLine(i, transform(prev), i+1, transform(cur))
+            prev = cur
 
     def _draw_primitive(self, painter):
         painter.setPen(QtCore.Qt.black)
@@ -187,9 +199,9 @@ class MainWindow(QtGui.QWidget):
         width = self.width()
         self.world.width = width
         self.world.height = self.height()
-        self.stimulation_func = deque(self.stimulation_func, maxlen=width)
-        self.state_func = deque(self.state_func, maxlen=width)
-        self.brain_stimulation_func = deque(self.brain_stimulation_func, maxlen=width)
+        self.stimulation_plot = deque(self.stimulation_plot, maxlen=width)
+        self.confidence_plot = deque(self.confidence_plot, maxlen=width)
+        self.brain_stimulation_plot = deque(self.brain_stimulation_plot, maxlen=width)
 
     def closeEvent(self, event):
         self.nnv_window.close()
