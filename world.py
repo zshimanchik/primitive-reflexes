@@ -19,9 +19,8 @@ class World:
         self.update_primitive_position()
         sensors_values = [v for x, y in self.prim.sensors_positions() for v in self.get_sensor_value(x, y)]
         self.prim.sensor_values = sensors_values
-        influence_value = self.get_influence_value()
-        self.prim.change_state(influence_value)
-        self.prim.update(sensors_values)
+        influence_value = self.get_influence_value(self.prim)
+        self.prim.update(sensors_values, influence_value)
 
     def update_primitive_position(self):
         if self.prim.x < 0:
@@ -53,7 +52,7 @@ class World:
         smell = [x*smell_strength for x in smell]
         return smell
 
-    def get_influence_value(self):
-        return self.get_sensor_value(self.prim.x, self.prim.y)[1] * 10
+    def get_influence_value(self, prim):
+        return self.get_sensor_value(prim.x, prim.y)[1] * 10
         # return sum(self.prim.sensor_values[1::3]) * 10
         # return self.prim.sensor_values[1] * 10

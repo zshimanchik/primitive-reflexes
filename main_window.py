@@ -97,12 +97,13 @@ class MainWindow(QtGui.QWidget):
             '\n'.join("{:.4f}, {:.4f}, {:.4f}".format(*x) for x in sensor_iter)
         )
         painter.drawText(
-            QtCore.QRect(200, 0, 200, 50),
+            QtCore.QRect(200, 0, 200, 100),
             QtCore.Qt.AlignTop,
-            'confidence={:.6f}\ninfl_val={:.6f}\nstimul={:.6f}'.format(
-                self.world.prim.confidence,
+            'infl_val={:.6f}\nstimul={:.6f}\nconfidence={:.6f}\nplan_len={}'.format(
                 self.world.prim.influence_value,
-                self.world.prim.stimulation
+                self.world.prim.stimulation,
+                self.world.prim.confidence,
+                self.world.prim.plan_len
             )
         )
 
