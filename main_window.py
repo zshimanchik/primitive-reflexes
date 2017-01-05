@@ -20,7 +20,7 @@ class MainWindow(QtGui.QWidget):
     def __init__(self):
         super(MainWindow, self).__init__()
         self._init_key_handlers()
-        self.setWindowTitle("Main Windows")
+        self.setWindowTitle("Primitive reflexes")
         self.resize(400, 400)
         self.mouse = Mouse()
         self.world = World(self.width(), self.height(), self.mouse)
@@ -42,8 +42,6 @@ class MainWindow(QtGui.QWidget):
         self.nnv_window = NNV2(network=self.world.prim.brain)
 
     def timerEvent(self, event):
-        self.setWindowTitle("{:.4f} : {:.6f} : {:.6f}"
-                            .format(self.world.prim.state, self.world.prim.stimulation, self.world.prim.brain_stimulation))
         if self.need_to_draw_plots:
             self._append_plot_info()
 
@@ -99,9 +97,13 @@ class MainWindow(QtGui.QWidget):
             '\n'.join("{:.4f}, {:.4f}, {:.4f}".format(*x) for x in sensor_iter)
         )
         painter.drawText(
-            QtCore.QRect(200, 0, 100, 50),
+            QtCore.QRect(200, 0, 200, 50),
             QtCore.Qt.AlignTop,
-            '{:.6f}\n{:.6f}'.format(self.world.get_influence_value(), self.world.prim.stimulation)
+            'confidence={:.6f}\ninfl_val={:.6f}\nstimul={:.6f}'.format(
+                self.world.prim.confidence,
+                self.world.prim.influence_value,
+                self.world.prim.stimulation
+            )
         )
 
     def _draw_plots(self, painter):
@@ -298,6 +300,10 @@ class Mouse(object):
                        self.y - self.area_size,
                        self.area_size * 2,
                        self.area_size * 2)
+        qp.drawEllipse(self.x - 5,
+                       self.y - 5,
+                       10,
+                       10)
         qp.setBrush(old_brush)
 
 
