@@ -14,8 +14,10 @@ class World:
         self.width = width
         self.height = height
         self.mouse = mouse
+        self.time = 0
 
     def update(self):
+        self.time += 1
         self.update_primitive_position()
         sensors_values = [v for x, y in self.prim.sensors_positions() for v in self.get_sensor_value(x, y)]
         self.prim.sensor_values = sensors_values

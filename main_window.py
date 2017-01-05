@@ -97,7 +97,8 @@ class MainWindow(QtGui.QWidget):
         painter.drawText(
             QtCore.QRect(200, 0, 200, 100),
             QtCore.Qt.AlignTop,
-            'infl_val={:.6f}\nstimul={:.6f}\nconfidence={:.6f}\nplan_len={}'.format(
+            'time={}\ninfl_val={:.6f}\nstimul={:.6f}\nconfidence={:.6f}\nplan_len={}'.format(
+                self.world.time,
                 self.world.prim.influence_value,
                 self.world.prim.stimulation,
                 self.world.prim.confidence,
