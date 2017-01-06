@@ -1,4 +1,5 @@
 import math
+import time
 
 from primitive import Primitive
 
@@ -15,9 +16,15 @@ class World:
         self.height = height
         self.mouse = mouse
         self.time = 0
+        self.perf = time.time()
 
     def update(self):
         self.time += 1
+        if self.time % 100 == 0:
+            now = time.time()
+            print("calc_time={}".format(now - self.perf))
+            self.perf = now
+
         self.update_primitive_position()
         sensors_values = [v for x, y in self.prim.sensors_positions() for v in self.get_sensor_value(x, y)]
         self.prim.sensor_values = sensors_values
