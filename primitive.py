@@ -1,7 +1,8 @@
 __author__ = 'zshimanchik'
 from collections import deque
 import math
-from NeuralNetwork.NeuralNetwork import NeuralNetwork
+# from NeuralNetwork.NeuralNetwork import NeuralNetwork
+from neural_network.neural_network import NeuralNetwork
 
 TWO_PI = math.pi * 2
 
