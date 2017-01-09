@@ -26,6 +26,7 @@ class MainWindow(QtGui.QWidget):
 
         width = self.width()
         self.stimulation_plot = deque(maxlen=width)
+        self.influence_plot = deque(maxlen=width)
         self.confidence_plot = deque(maxlen=width)
         self.brain_stimulation_plot = deque(maxlen=width)
         self.need_to_draw_plots = False
@@ -55,6 +56,7 @@ class MainWindow(QtGui.QWidget):
     def _append_plot_info(self):
         self.confidence_plot.append(self.world.prim.confidence)
         self.stimulation_plot.append(self.world.prim.stimulation)
+        self.influence_plot.append(self.world.prim.influence_value / 10.0)
         self.brain_stimulation_plot.append(self.world.prim.brain_stimulation)
 
     def _update_auto_teach(self):
@@ -98,12 +100,12 @@ class MainWindow(QtGui.QWidget):
         painter.drawText(
             QtCore.QRect(200, 0, 200, 100),
             QtCore.Qt.AlignTop,
-            'time={}\ninfl_val={:.6f}\nstimul={:.6f}\nconfidence={:.6f}\nplan_len={}'.format(
+            'time={}\ninfl_val={:.6f}\nstimul={:.6f}\nconfidence={:.6f}\nmove_random={}'.format(
                 self.world.time,
                 self.world.prim.influence_value,
                 self.world.prim.stimulation,
                 self.world.prim.confidence,
-                self.world.prim.plan_len
+                self.world.prim._chance_to_move_random
             )
         )
 
@@ -116,6 +118,8 @@ class MainWindow(QtGui.QWidget):
 
         painter.setPen(QtCore.Qt.red)
         self._draw_plot(painter, self.stimulation_plot, plot_rect, 0.25, -0.25)
+        painter.setPen(QtCore.Qt.darkBlue)
+        self._draw_plot(painter, self.influence_plot, plot_rect, 1, -1)
         painter.setPen(QtCore.Qt.darkBlue)
         self._draw_plot(painter, self.brain_stimulation_plot, plot_rect, 0.25, -0.25)
         painter.setPen(QtCore.Qt.darkGreen)
@@ -202,6 +206,7 @@ class MainWindow(QtGui.QWidget):
         self.world.width = width
         self.world.height = self.height()
         self.stimulation_plot = deque(self.stimulation_plot, maxlen=width)
+        self.influence_plot = deque(self.influence_plot, maxlen=width)
         self.confidence_plot = deque(self.confidence_plot, maxlen=width)
         self.brain_stimulation_plot = deque(self.brain_stimulation_plot, maxlen=width)
 
@@ -284,7 +289,7 @@ class Mouse(object):
         self.but1_brush = brush(80, 180, 60, alpha=100)
         self.but2_brush = brush(180, 60, 80, alpha=100)
         self.but3_brush = brush(60, 80, 180, alpha=100)
-        self._area_size = 10
+        self._area_size = 300
         self._influence_area_size = self._area_size * self.GREEN_AREA_RATIO
 
     @property
