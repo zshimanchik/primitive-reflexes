@@ -126,7 +126,7 @@ class MainWindow(QtGui.QWidget):
         painter.drawLine(0, zero_line, self.width(), zero_line)
 
         painter.setPen(QtCore.Qt.red)
-        self._draw_plot(painter, self.stimulation_plot, plot_rect, 0.25, -0.25)
+        self._draw_plot(painter, self.stimulation_plot, plot_rect, 0.05, -0.05)
         painter.setPen(QtCore.Qt.darkBlue)
         self._draw_plot(painter, self.influence_plot, plot_rect, 1, -1)
         # painter.setPen(QtCore.Qt.darkBlue)
