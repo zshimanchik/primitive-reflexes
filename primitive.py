@@ -1,4 +1,3 @@
-__author__ = 'zshimanchik'
 from collections import deque
 import math
 import random
@@ -6,10 +5,11 @@ import random
 # from NeuralNetwork.NeuralNetwork import NeuralNetwork
 from neural_network.neural_network import NeuralNetwork
 
+__author__ = 'zshimanchik'
 TWO_PI = math.pi * 2
 
 
-class Primitive():
+class Primitive:
     DEBUG = False
     MIN_BRAIN_STIMULATION = 0.01
     MAX_BRAIN_STIMULATION = 0.1
@@ -83,7 +83,8 @@ class Primitive():
             move_index = move.index(max(move))
             if self.DEBUG:
                 print('=====')
-                print('\n'.join('{} => {:.6f}'.format(format_list(x), a[0]) for x, a in zip(inputs, answers)))
+                print('\n'.join('{} => {:.6f}'.format(format_list(x), a[0])
+                                for x, a in zip(inputs, answers)))
                 # print(format_list(answers.reshape(answers.size)))
                 print(format_list(sensors_values), move_index, format_list(answer))
             self.confidence = answer[0]
@@ -123,34 +124,10 @@ class Primitive():
         new_len = int(len(self._memory) * chunk_size)
         return self._memory[:new_len]
 
-
     def _get_best_reward(self, state):
         inputs = [state + move for move in self._all_movements]
         answers = self.brain.calculate(inputs)
-        return answers[:,0].max()
-
-
-    def _get_brain_stimulation(self, influence_value):
-        """
-        brain must be calculated before using this method!!
-        """
-        self.influence_value = influence_value
-        self.state += influence_value
-        self.state = max(self.state, -1.0)
-        self.state = min(self.state, 1.0)
-
-        self.stimulation = influence_value - self.prev_influence
-        self.prev_influence = influence_value
-        if self.DEBUG:
-            print("stimulation={:.6f}".format(self.stimulation))
-
-        # sign of self.stimulation
-        sign = (self.stimulation > 0) - (self.stimulation < 0)
-        abs_stimulation = abs(self.stimulation)
-        self.brain_stimulation = (abs_stimulation < Primitive.BRAIN_STIMULATION_FILTER_THRESHOLD) * sign \
-                                 * min(abs_stimulation, Primitive.MAX_BRAIN_STIMULATION)
-        return self.brain_stimulation
-        # self.brain.teach_considering_random(self.brain_stimulation)
+        return answers[:, 0].max()
 
     moves = [
         (1, -1),
@@ -167,6 +144,7 @@ class Primitive():
         self.angle = (self.angle + rotate_angle * length * 0.03) % TWO_PI
         self.x += math.cos(self.angle) * length*0.5
         self.y += math.sin(self.angle) * length*0.5
+
 
 def format_list(array):
     return '[' + ', '.join("{:.6f}".format(x) for x in array) + ']'
