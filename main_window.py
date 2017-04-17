@@ -56,7 +56,7 @@ class MainWindow(QtGui.QWidget):
     def _append_plot_info(self):
         self.confidence_plot.append(self.world.prim.confidence)
         self.stimulation_plot.append(self.world.prim.stimulation)
-        self.influence_plot.append(self.world.prim.influence_value / 10.0)
+        self.influence_plot.append(self.world.prim.influence_value)
         self.brain_stimulation_plot.append(self.world.prim.brain_stimulation)
 
     def _update_auto_teach(self):
@@ -100,8 +100,14 @@ class MainWindow(QtGui.QWidget):
         painter.drawText(
             QtCore.QRect(200, 0, 200, 100),
             QtCore.Qt.AlignTop,
-            'time={}\ninfl_val={:.6f}\nstimul={:.6f}\nconfidence={:.6f}\nmove_random={}'.format(
+            'time={}\n'
+            'performance={:.4f}\n'
+            'infl_val={:.6f}\n'
+            'stimul={:.6f}\n'
+            'confidence={:.6f}\n'
+            'move_random={}'.format(
                 self.world.time,
+                self.world.performance,
                 self.world.prim.influence_value,
                 self.world.prim.stimulation,
                 self.world.prim.confidence,

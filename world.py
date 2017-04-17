@@ -16,14 +16,16 @@ class World:
         self.height = height
         self.mouse = mouse
         self.time = 0
-        self.perf = time.time()
+        self.prev_time = time.time()
+        self.performance = 0
 
     def update(self):
         self.time += 1
         if self.time % 100 == 0:
             now = time.time()
-            print("calc_time={}".format(now - self.perf))
-            self.perf = now
+            self.performance = now - self.prev_time
+            # print("calc_time={}".format(self.performance))
+            self.prev_time = now
 
         self.update_primitive_position()
         sensors_values = [v for x, y in self.prim.sensors_positions() for v in self.get_sensor_value(x, y)]
@@ -43,6 +45,9 @@ class World:
             self.prim.y = 10
 
     def get_sensor_value(self, x, y):
+        """
+        return value vector with values in bound [0;1]
+        """
         if not self.mouse.pressed():
             return BLACK
 
@@ -62,6 +67,6 @@ class World:
         return smell
 
     def get_influence_value(self, prim):
-        return self.get_sensor_value(prim.x, prim.y)[0] * 10
+        return self.get_sensor_value(prim.x, prim.y)[0]
         # return sum(self.prim.sensor_values[1::3]) * 10
         # return self.prim.sensor_values[1] * 10
