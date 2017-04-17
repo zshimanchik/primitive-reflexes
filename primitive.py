@@ -61,9 +61,10 @@ class Primitive():
 
     def update(self, sensors_values, influence_value):
         self.sensor_values = sensors_values
+        self.stimulation = influence_value - self.influence_value
         self.influence_value = influence_value
 
-        reward = influence_value / 10.0
+        reward = influence_value
         # if reward > 0:
         self._memory.append((self._last_sensor_values, self._last_move, reward, self.sensor_values))
 

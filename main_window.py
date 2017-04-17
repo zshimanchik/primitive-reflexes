@@ -13,6 +13,8 @@ from primitive import Primitive
 from NeuralNetworkViewer import NeuralNetworkViewer
 from neural_network_viewer import NeuralNetworkViewer as NNV2
 
+MONOSPACED_FONT = QtGui.QFont('DejaVu Sans Mono')
+
 
 class MainWindow(QtGui.QWidget):
     def __init__(self):
@@ -97,13 +99,14 @@ class MainWindow(QtGui.QWidget):
             QtCore.Qt.AlignTop,
             '\n'.join(sensor_format_str.format(*x) for x in sensor_iter)
         )
+        painter.setFont(MONOSPACED_FONT)
         painter.drawText(
             QtCore.QRect(200, 0, 200, 100),
             QtCore.Qt.AlignTop,
             'time={}\n'
             'performance={:.4f}\n'
             'infl_val={:.6f}\n'
-            'stimul={:.6f}\n'
+            'stimul={:+.6f}\n'
             'confidence={:.6f}\n'
             'move_random={}'.format(
                 self.world.time,
@@ -126,8 +129,8 @@ class MainWindow(QtGui.QWidget):
         self._draw_plot(painter, self.stimulation_plot, plot_rect, 0.25, -0.25)
         painter.setPen(QtCore.Qt.darkBlue)
         self._draw_plot(painter, self.influence_plot, plot_rect, 1, -1)
-        painter.setPen(QtCore.Qt.darkBlue)
-        self._draw_plot(painter, self.brain_stimulation_plot, plot_rect, 0.25, -0.25)
+        # painter.setPen(QtCore.Qt.darkBlue)
+        # self._draw_plot(painter, self.brain_stimulation_plot, plot_rect, 0.25, -0.25)
         painter.setPen(QtCore.Qt.darkGreen)
         self._draw_plot(painter, self.confidence_plot, plot_rect, 1, -1)
 
